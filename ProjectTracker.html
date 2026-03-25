@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Tracker</title>
+  <link rel="stylesheet" href="ProjectTracker.css">
+</head>
+<body>
+  <main class="tracker-shell">
+    <header class="tracker-header">
+      <p class="eyebrow">Live Delivery Console</p>
+      <h1 id="projectTitle">Project Tracker</h1>
+      <p id="projectMeta" class="subtitle"></p>
+    </header>
+    <section id="projectInfoBox" class="project-info-box"></section>
+
+    <section class="summary-grid" id="summaryGrid"></section>
+    <section class="insight-grid" id="insightGrid"></section>
+    <section class="metric-legend" aria-label="Metric calculation legend">
+      <article class="legend-card">
+        <div class="legend-head">
+          <h3>Status Logic</h3>
+          <span class="legend-help" title="Completed only when Actual End is set. WIP when Actual Start exists without Actual End. Yet to Start when no Actual Start. Delayed flag appears if today is beyond Planned End.">?</span>
+        </div>
+        <p>Completed requires <strong>Actual End</strong>. WIP requires <strong>Actual Start</strong>.</p>
+      </article>
+      <article class="legend-card">
+        <div class="legend-head">
+          <h3>Progress Logic</h3>
+          <span class="legend-help" title="Completed = 100%. WIP progress is elapsed working days from Actual Start to projected end (Planned End or Planned Days fallback). Open delayed tasks are capped below 100 until Actual End is entered.">?</span>
+        </div>
+        <p>Uses elapsed workdays for WIP and gives <strong>100%</strong> only on completion.</p>
+      </article>
+      <article class="legend-card">
+        <div class="legend-head">
+          <h3>Timeline Health</h3>
+          <span class="legend-help" title="On Time/Delayed for completed items compares Actual End vs Planned End. Open items with Planned End in past are Overdue. Otherwise On Track.">?</span>
+        </div>
+        <p>Open past-due items show <strong>Overdue</strong>; completed compares actual vs planned.</p>
+      </article>
+    </section>
+
+    <section class="tracker-panel">
+      <div class="toolbar">
+        <div class="tab-row" id="tabRow">
+          <button class="tab-btn active" data-tab="milestones" type="button">Milestones</button>
+          <button class="tab-btn" data-tab="checklist" type="button">Go-Live Checklist</button>
+          <button class="tab-btn" data-tab="revisions" type="button">Go-Live Revisions</button>
+          <button class="tab-btn" data-tab="raid" type="button">RAID Log</button>
+        </div>
+        <div class="action-row" id="trackerActions">
+          <span id="trackerRoleBadge" class="role-badge">Read Only</span>
+          <button id="editTrackerBtn" class="action-btn" type="button">Edit Tracker</button>
+          <button id="saveTrackerBtn" class="action-btn action-primary hidden" type="button">Save</button>
+          <button id="cancelTrackerBtn" class="action-btn hidden" type="button">Cancel</button>
+          <button id="addGenericRowBtn" class="action-btn hidden" type="button">+ Add Row</button>
+          <button id="addRevisionRowBtn" class="action-btn hidden" type="button">+ Add Revision Row</button>
+          <button id="addMilestoneColumnBtn" class="action-btn hidden" type="button">+ Add Milestone Column</button>
+          <button id="removeMilestoneColumnBtn" class="action-btn hidden" type="button">- Remove Milestone Column</button>
+          <button id="resetTableBtn" class="action-btn" type="button">Reset Table Input</button>
+        </div>
+        <div class="toolbar-meta">
+          <p id="tabGuideText" class="tab-guide-text">Milestones: track planned vs actual execution.</p>
+          <span id="editStatePill" class="edit-state-pill">View Mode</span>
+        </div>
+        <div class="filter-row" id="filterRow">
+          <input id="searchInput" type="search" placeholder="Search milestone / owner / status">
+          <select id="statusFilter">
+            <option value="all">All Status</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="trackerTable">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="ProjectTracker.js"></script>
+</body>
+</html>

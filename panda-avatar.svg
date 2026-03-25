@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 300">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#fdfdff"/>
+      <stop offset="100%" stop-color="#e7ecff"/>
+    </radialGradient>
+    <radialGradient id="fur" cx="50%" cy="25%" r="80%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#eceef5"/>
+    </radialGradient>
+    <radialGradient id="darkFur" cx="40%" cy="35%" r="80%">
+      <stop offset="0%" stop-color="#43444b"/>
+      <stop offset="100%" stop-color="#23242a"/>
+    </radialGradient>
+    <linearGradient id="bamboo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8fd46b"/>
+      <stop offset="100%" stop-color="#4f9d43"/>
+    </linearGradient>
+    <linearGradient id="bambooDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6fbc5a"/>
+      <stop offset="100%" stop-color="#3d7c37"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="240" height="300" fill="none"/>
+
+  <g opacity=".75">
+    <rect x="2" y="8" width="14" height="282" rx="7" fill="url(#bambooDark)"/>
+    <rect x="18" y="18" width="14" height="272" rx="7" fill="url(#bamboo)"/>
+    <rect x="34" y="6" width="12" height="284" rx="6" fill="url(#bambooDark)"/>
+
+    <rect x="194" y="8" width="14" height="282" rx="7" fill="url(#bambooDark)"/>
+    <rect x="208" y="16" width="14" height="274" rx="7" fill="url(#bamboo)"/>
+    <rect x="224" y="6" width="12" height="284" rx="6" fill="url(#bambooDark)"/>
+
+    <path d="M10 54h20M10 102h21M10 152h21M10 202h20M10 252h21" stroke="#3f7f39" stroke-width="3" stroke-linecap="round"/>
+    <path d="M210 60h20M210 108h19M210 158h20M210 208h20M210 258h19" stroke="#3f7f39" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <circle cx="78" cy="72" r="26" fill="url(#darkFur)"/>
+  <circle cx="162" cy="72" r="26" fill="url(#darkFur)"/>
+  <circle cx="78" cy="72" r="14" fill="#2c2e35" opacity=".5"/>
+  <circle cx="162" cy="72" r="14" fill="#2c2e35" opacity=".5"/>
+
+  <ellipse cx="120" cy="124" rx="84" ry="86" fill="url(#fur)" stroke="#d6dbe8" stroke-width="3"/>
+
+  <ellipse cx="92" cy="118" rx="9" ry="8" fill="#ffffff"/>
+  <ellipse cx="148" cy="118" rx="9" ry="8" fill="#ffffff"/>
+  <circle cx="92" cy="118" r="4.4" fill="#181a1f"/>
+  <circle cx="148" cy="118" r="4.4" fill="#181a1f"/>
+  <circle cx="94" cy="116" r="1.2" fill="#ffffff"/>
+  <circle cx="150" cy="116" r="1.2" fill="#ffffff"/>
+
+  <ellipse cx="120" cy="148" rx="20" ry="14" fill="#ffffff" stroke="#d9deea" stroke-width="2"/>
+  <path d="M110 142h20l-10 10z" fill="#2a2c32"/>
+  <path d="M120 151v8" stroke="#2a2c32" stroke-width="2" stroke-linecap="round"/>
+  <path d="M120 159c-6.5 0-10.5-3.5-12.5-7.5" fill="none" stroke="#2a2c32" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M120 159c6.5 0 10.5-3.5 12.5-7.5" fill="none" stroke="#2a2c32" stroke-width="2.4" stroke-linecap="round"/>
+
+  <ellipse cx="120" cy="225" rx="58" ry="62" fill="url(#fur)" stroke="#d6dbe8" stroke-width="3"/>
+
+  <ellipse cx="68" cy="218" rx="22" ry="36" fill="url(#darkFur)" transform="rotate(16 68 218)"/>
+  <ellipse cx="172" cy="218" rx="22" ry="36" fill="url(#darkFur)" transform="rotate(-16 172 218)"/>
+
+  <ellipse cx="96" cy="242" rx="16" ry="24" fill="url(#fur)"/>
+  <ellipse cx="144" cy="242" rx="16" ry="24" fill="url(#fur)"/>
+
+  <ellipse cx="90" cy="282" rx="24" ry="14" fill="url(#darkFur)"/>
+  <ellipse cx="150" cy="282" rx="24" ry="14" fill="url(#darkFur)"/>
+</svg>

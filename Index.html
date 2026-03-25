@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Requisition Form Builder</title>
+  <link rel="stylesheet" href="Style.css">
+</head>
+<body>
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+
+  <main id="loginRoot" class="login-shell">
+    <section class="panel login-panel">
+      <h2>Login</h2>
+      <p class="helper">Use your email and password to continue.</p>
+      <div class="mini-pandas" aria-hidden="true">
+        <span class="mini-panda"></span>
+        <span class="mini-panda"></span>
+        <span class="mini-panda"></span>
+        <span class="mini-panda"></span>
+        <span class="mini-panda"></span>
+        <span class="mini-panda"></span>
+      </div>
+      <div class="login-avatar photo-avatar" aria-hidden="true">
+        <img id="loginPhotoAvatar" src="panda-avatar.svg" alt="Login avatar" onerror="this.onerror=null;this.src='avatar-placeholder.svg';">
+        <div class="panda-thought">I'm not allow to see your password</div>
+        <div class="panda-blink panda-blink-left"></div>
+        <div class="panda-blink panda-blink-right"></div>
+        <div class="panda-sunglasses"></div>
+      </div>
+      <div id="loginForm" novalidate>
+        <div class="modal-grid">
+          <label for="loginEmail">User ID / Email</label>
+          <input id="loginEmail" type="text" placeholder="Enter user ID or email">
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" placeholder="Enter password">
+        </div>
+        <p id="loginError" class="empty-state hidden">Invalid email or password.</p>
+        <button id="loginBtn" class="btn btn-primary" type="button">Login</button>
+      </div>
+    </section>
+  </main>
+
+  <main id="appRoot" class="app-shell hidden">
+    <button id="logoutBtn" class="btn btn-ghost top-logout" type="button">Logout</button>
+    <header class="app-header">
+      <p class="eyebrow">Recruitment Toolkit</p>
+      <h1>Requisition Form Builder</h1>
+      <div class="drawer-actions">
+        <span id="roleBadge" class="pill">Role</span>
+      </div>
+    </header>
+
+    <section class="layout-shell">
+      <aside class="panel client-panel">
+        <div class="panel-head">
+          <h2>Clients</h2>
+          <span id="clientCount" class="pill">0</span>
+        </div>
+        <button id="openClientModalBtn" class="btn btn-primary" type="button">Add Client</button>
+        <button id="openAddUserModalBtn" class="btn btn-ghost" type="button">Manager User</button>
+        <div id="clientList" class="client-list"></div>
+      </aside>
+
+      <section class="workspace-area">
+        <div id="workspacePlaceholder" class="panel placeholder-panel">
+        </div>
+
+        <div id="workspaceContent" class="workspace-content hidden">
+          <div class="panel active-client-banner">
+            <div class="panel-head">
+              <h2 id="activeClientTitle">Client Workspace</h2>
+              <div class="drawer-actions">
+                <a id="projectTrackerLink" class="btn btn-ghost" href="ProjectTracker.html" target="_blank" rel="noopener noreferrer">Project Tracker</a>
+                <button id="openClientUsersBtn" class="btn btn-ghost" type="button">Client Users</button>
+                <button id="adminSowManageBtn" class="btn btn-ghost hidden" type="button">SoW</button>
+                <button id="openPreviewTopBtn" class="btn btn-ghost" type="button">Preview Form</button>
+                <button id="openAuditLogBtn" class="btn btn-ghost" type="button">Audit Log</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="clientPageTabs" class="panel client-page-tabs hidden">
+            <div class="client-page-tabs-row">
+              <button class="client-page-tab active" type="button" data-page="requisition">Requisition Form</button>
+              <button class="client-page-tab" type="button" data-page="pii">PII Form</button>
+              <button class="client-page-tab" type="button" data-page="apply">Apply Form</button>
+              <button class="client-page-tab" type="button" data-page="document_collection">Document Collection</button>
+              <button class="client-page-tab" type="button" data-page="fitment">Fitment & Offer</button>
+              <button class="client-page-tab" type="button" data-page="workflow">Workflow</button>
+              <button class="client-page-tab" type="button" data-page="it_item">IT Item</button>
+              <button class="client-page-tab" type="button" data-page="data_migration">Data Migration</button>
+              <button class="client-page-tab" type="button" data-page="ta_checklist">TA Checklist</button>
+            </div>
+          </div>
+
+          <section id="fitmentOfferSwitcher" class="panel fitment-offer-switcher hidden">
+            <div class="fitment-offer-switcher-row">
+              <button class="fitment-offer-view-btn active" type="button" data-fitment-view="offer">Offer Form</button>
+              <button class="fitment-offer-view-btn" type="button" data-fitment-view="calculator">Fitment Calculator</button>
+            </div>
+          </section>
+
+          <section id="requisitionDeptSwitcher" class="panel requisition-dept-switcher hidden">
+            <div class="panel-head">
+              <h3>Department Requisition Workspace</h3>
+              <span id="requisitionDeptCount" class="pill">0</span>
+            </div>
+            <p class="helper">Add Geo first, then create department structure and choose Department/Geo to build requisition fields.</p>
+            <div class="requisition-workspace-grid">
+              <div class="requisition-workspace-block step-card">
+                <div class="step-card-head">
+                  <h4><span class="step-badge">1</span> Select Active Workspace</h4>
+                  <button id="requisitionWorkspaceToggleBtn" class="btn btn-ghost compact" type="button" aria-expanded="false">Expand</button>
+                </div>
+                <div id="requisitionWorkspaceBlock" class="requisition-step-collapsed hidden">
+                  <div class="requisition-dept-row requisition-subdept-row">
+                    <label for="requisitionGeoSelect">Geo</label>
+                    <div class="requisition-dept-add requisition-dept-add-subdept">
+                      <select id="requisitionGeoSelect"></select>
+                      <span id="requisitionGeoCount" class="pill">0</span>
+                      <button id="requisitionShowGeoManageBtn" class="btn btn-primary" type="button">Add</button>
+                      <button id="requisitionRemoveGeoBtn" class="btn btn-ghost" type="button">Remove</button>
+                    </div>
+                  </div>
+                  <div id="requisitionGeoManageRow" class="requisition-dept-row hidden">
+                    <label for="requisitionNewGeoInput">Manage Geo</label>
+                    <div class="requisition-dept-add">
+                      <input id="requisitionNewGeoInput" type="text" placeholder="Enter geo name">
+                      <button id="requisitionAddGeoBtn" class="btn btn-primary" type="button">Add</button>
+                    </div>
+                  </div>
+                  <div id="requisitionDeptRow" class="requisition-dept-row">
+                    <label for="requisitionDeptSelect">Department</label>
+                    <div class="requisition-dept-add">
+                      <select id="requisitionDeptSelect"></select>
+                      <button id="requisitionQuickAddDeptBtn" class="btn btn-primary" type="button">Add Department</button>
+                      <button id="requisitionRemoveDeptBtn" class="btn btn-ghost" type="button">Remove</button>
+                    </div>
+                  </div>
+                  <div id="requisitionSubDeptSelectRow" class="requisition-dept-row requisition-subdept-row">
+                    <label for="requisitionSubDeptSelect">Sub Department</label>
+                    <div class="requisition-dept-add requisition-dept-add-subdept">
+                      <select id="requisitionSubDeptSelect"></select>
+                      <span id="requisitionSubDeptCount" class="pill">0</span>
+                      <button id="requisitionShowSubDeptManageBtn" class="btn btn-primary" type="button">Add</button>
+                      <button id="requisitionRemoveSubDeptBtn" class="btn btn-ghost" type="button">Remove</button>
+                    </div>
+                  </div>
+                  <p class="inline-note">Tip: Select Geo and Department above to manage their requisition canvas.</p>
+                </div>
+              </div>
+              <div class="requisition-workspace-block step-card">
+                <div class="step-card-head">
+                  <h4><span class="step-badge">2</span> Manage Department</h4>
+                  <button id="requisitionCreateToggleBtn" class="btn btn-ghost compact" type="button" aria-expanded="false">Expand</button>
+                </div>
+                <div id="requisitionCreateBlock" class="requisition-step-collapsed hidden">
+                  <div id="requisitionGeoManageRowCreate" class="requisition-dept-row hidden">
+                    <label for="requisitionNewGeoInputCreate">Add Geo</label>
+                    <div class="requisition-dept-add">
+                      <input id="requisitionNewGeoInputCreate" type="text" placeholder="Enter geo name">
+                      <button id="requisitionAddGeoBtnCreate" class="btn btn-primary" type="button">Add</button>
+                    </div>
+                  </div>
+                  <div class="requisition-dept-row">
+                    <label for="requisitionDeptNameInput">New Department</label>
+                    <div class="requisition-dept-add">
+                      <input id="requisitionDeptNameInput" type="text" placeholder="Enter department name">
+                      <button id="requisitionAddDeptBtn" class="btn btn-primary" type="button">Add Department</button>
+                    </div>
+                  </div>
+                  <div class="requisition-dept-row">
+                    <label for="requisitionHasSubDeptCheck">Add Sub Department?</label>
+                    <div class="requisition-dept-add">
+                      <label class="check-row inline" for="requisitionHasSubDeptCheck">
+                        <input id="requisitionHasSubDeptCheck" type="checkbox">
+                        Yes
+                      </label>
+                    </div>
+                  </div>
+                  <div id="requisitionSubDeptRow" class="requisition-dept-row hidden">
+                    <label for="requisitionSubDeptInput">Sub Department(s)</label>
+                    <div class="requisition-dept-add">
+                      <input id="requisitionSubDeptInput" type="text" placeholder="Comma-separated sub departments">
+                    </div>
+                  </div>
+                  <div id="requisitionSubDeptManageRow" class="requisition-dept-row hidden">
+                    <label for="requisitionNewSubDeptInput">Add To Selected Department</label>
+                    <div class="requisition-dept-add">
+                      <input id="requisitionNewSubDeptInput" type="text" placeholder="Enter sub department name">
+                      <button id="requisitionAddSubDeptBtn" class="btn btn-primary" type="button">Add</button>
+                    </div>
+                  </div>
+                  <p class="inline-note">Example: `Presales, Marketing, Core Sales`</p>
+                </div>
+              </div>
+            </div>
+            <p id="requisitionDeptHint" class="helper"></p>
+          </section>
+
+          <section class="main-layout">
+            <aside class="panel available-panel">
+              <div class="panel-head">
+                <h2>Requisition Fields</h2>
+                <span id="paletteCount" class="pill">0</span>
+              </div>
+              <p class="helper">Drag fields to the canvas. Each client has its own list.</p>
+
+              <div id="palette" class="palette-list"></div>
+
+              <div class="add-field-area">
+                <div class="drawer-actions">
+                  <button id="openAddFieldBtn" class="btn btn-primary" type="button">Add Field</button>
+                  <button id="importFieldsBtn" class="btn btn-ghost" type="button">Import Fields</button>
+                  <input id="importFieldsInput" class="hidden" type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                </div>
+                <p class="helper">Import columns: label, id, type, required/mandatory, options, add_to_canvas, section.</p>
+              </div>
+            </aside>
+
+            <section class="panel canvas-panel">
+              <div class="panel-head">
+                <h2>Form Canvas</h2>
+                <strong id="canvasDeptLabel" class="canvas-dept-label"></strong>
+                <span id="canvasCount" class="pill">0</span>
+              </div>
+              <div id="piiGeoFilterBar" class="apply-source-filter-bar hidden">
+                <label for="piiGeoFilterSelect">Geo</label>
+                <select id="piiGeoFilterSelect"></select>
+                <button id="piiGeoAddBtn" class="btn btn-primary" type="button">Add Geo</button>
+              </div>
+              <div id="piiSectionManager" class="pii-canvas-section-bar hidden">
+                <select id="piiSectionSelect"></select>
+                <button id="piiAddSectionToCanvasBtn" class="btn btn-primary" type="button">Add Section To Canvas</button>
+                <button id="piiRemoveSectionFromCanvasBtn" class="btn btn-ghost" type="button">Remove Section</button>
+                <span id="piiSectionCount" class="pill">0</span>
+              </div>
+              <div id="applyGeoFilterBar" class="apply-source-filter-bar hidden">
+                <label for="applyGeoFilterSelect">Geo</label>
+                <select id="applyGeoFilterSelect"></select>
+                <button id="applyGeoAddBtn" class="btn btn-primary" type="button">Add Geo</button>
+              </div>
+              <div id="applySourceFilterBar" class="apply-source-filter-bar hidden">
+                <label for="applySourceFilterSelect">Source</label>
+                <select id="applySourceFilterSelect">
+                  <option value="Career Site">Career Site</option>
+                  <option value="Recruiter Upload">Recruiter Upload</option>
+                  <option value="Employee Referral">Employee Referral</option>
+                  <option value="IJP">IJP</option>
+                </select>
+              </div>
+              <p id="piiSectionHint" class="helper hidden"></p>
+              <p class="helper">Drop fields in this larger area and drag to reorder.</p>
+              <div id="canvas" class="drop-zone">
+                <p class="empty-state">Drop fields here to start building.</p>
+              </div>
+              <section id="dependencyRulePanel" class="dependency-rule-panel">
+                <div class="panel-head">
+                  <h3>Field Dependencies</h3>
+                  <button id="addDependencyRuleBtn" class="btn btn-ghost" type="button">+ Rule</button>
+                </div>
+                <p class="helper">Define rules like: if source value matches condition, then show/hide/require target field.</p>
+                <div class="dept-table-wrap">
+                  <table class="dept-approval-table dependency-rule-table">
+                    <thead>
+                      <tr>
+                        <th>If Field</th>
+                        <th>Condition</th>
+                        <th>Value</th>
+                        <th>Then Field</th>
+                        <th>Action</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="dependencyRuleBody"></tbody>
+                  </table>
+                </div>
+              </section>
+              <div class="drawer-actions canvas-footer-actions">
+                <button id="submitCanvasBtn" class="btn btn-primary" type="button">Submit Canvas</button>
+              </div>
+            </section>
+          </section>
+
+          <section id="requisitionApprovalPanel" class="panel requisition-approval-panel hidden">
+            <div class="panel-head">
+              <h2>Requisition Approval Matrix</h2>
+              <button id="addReqApprovalRowBtn" class="btn btn-ghost" type="button">+ Row</button>
+            </div>
+            <p class="helper">Define approval flow with condition and delegate approver for selected department.</p>
+            <div class="dept-table-wrap">
+              <table class="dept-approval-table">
+                <thead>
+                  <tr>
+                    <th>Level</th>
+                    <th>Primary Approver</th>
+                    <th>Condition</th>
+                    <th>Delegate To</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="requisitionApprovalBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="offerApprovalPanel" class="panel requisition-approval-panel hidden">
+            <div class="panel-head">
+              <h2>Offer Approval Matrix</h2>
+              <button id="addOfferApprovalRowBtn" class="btn btn-ghost" type="button">+ Row</button>
+            </div>
+            <p class="helper">Define offer approval flow with condition and delegate approver for selected department.</p>
+            <div class="requisition-dept-row">
+              <label for="offerApprovalDeptSelect">Department</label>
+              <div class="requisition-dept-add requisition-dept-add-subdept">
+                <select id="offerApprovalDeptSelect"></select>
+              </div>
+            </div>
+            <p id="offerApprovalDeptHint" class="helper"></p>
+            <div class="dept-table-wrap">
+              <table class="dept-approval-table">
+                <thead>
+                  <tr>
+                    <th>Level</th>
+                    <th>Primary Approver</th>
+                    <th>Condition</th>
+                    <th>Delegate To</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="offerApprovalBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="documentCollectionPanel" class="panel document-collection-panel hidden">
+            <div class="panel-head">
+              <h2>Document Collection</h2>
+            </div>
+            <p class="helper">Add and manage required documents for pre-offer and post-offer stages.</p>
+            <div id="documentCollectionGeoBar" class="requisition-dept-row requisition-subdept-row">
+              <label for="documentCollectionGeoSelect">Geo</label>
+              <div class="requisition-dept-add requisition-dept-add-subdept">
+                <select id="documentCollectionGeoSelect"></select>
+                <button id="documentCollectionAddGeoBtn" class="btn btn-primary" type="button">Add Geo</button>
+              </div>
+            </div>
+            <div class="document-collection-grid">
+              <section class="document-stage-card">
+                <div class="panel-head">
+                  <h3>Pre-Offer Documents</h3>
+                </div>
+                <div class="document-add-row">
+                  <input id="preOfferDocInput" type="text" placeholder="Add pre-offer document">
+                  <button id="addPreOfferDocBtn" class="btn btn-primary" type="button">Add</button>
+                </div>
+                <div id="preOfferDocList" class="document-list"></div>
+              </section>
+              <section class="document-stage-card">
+                <div class="panel-head">
+                  <h3>Post-Offer Documents</h3>
+                </div>
+                <div class="document-add-row">
+                  <input id="postOfferDocInput" type="text" placeholder="Add post-offer document">
+                  <button id="addPostOfferDocBtn" class="btn btn-primary" type="button">Add</button>
+                </div>
+                <div id="postOfferDocList" class="document-list"></div>
+              </section>
+            </div>
+          </section>
+
+          <section id="fitmentPanel" class="panel fitment-panel hidden">
+            <div class="panel-head">
+              <h2>Fitment</h2>
+            </div>
+            <p class="helper">Upload salary calculator in CSV or Excel (.xlsx/.xls). Platform will replicate it below for review and edits.</p>
+            <div class="fitment-upload-row">
+              <input id="fitmentFileInput" type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+              <div class="fitment-upload-actions">
+                <button id="uploadFitmentBtn" class="btn btn-primary" type="button">Upload Calculator</button>
+                <button id="clearFitmentBtn" class="btn btn-ghost" type="button">Clear Data</button>
+                <button id="downloadFitmentBtn" class="btn btn-ghost download-btn" type="button">Download Uploaded File</button>
+              </div>
+            </div>
+            <p id="fitmentMeta" class="helper"></p>
+            <div id="fitmentReplicaWrap" class="fitment-replica-wrap"></div>
+            <div id="fitmentFormulaBar" class="fitment-formula-bar">Select a cell to view formula/value.</div>
+          </section>
+
+          <section id="workflowPanel" class="panel workflow-panel hidden">
+            <div class="panel-head">
+              <h2>Recruitment Workflow Builder</h2>
+            </div>
+            <p class="helper">Build your workflow visually. Add nodes, drag to position, and connect steps.</p>
+
+            <div class="workflow-toolbar">
+              <select id="workflowNodeType">
+                <option value="start">Start</option>
+                <option value="step" selected>Step</option>
+                <option value="decision">Decision</option>
+                <option value="end">End</option>
+              </select>
+              <input id="workflowNodeLabel" type="text" placeholder="Node label (e.g. Screening)">
+              <button id="workflowAddNodeBtn" class="btn btn-primary" type="button">+ Node</button>
+              <button id="workflowLoadExampleBtn" class="btn btn-ghost" type="button">Load Example</button>
+              <button id="workflowConnectBtn" class="btn btn-ghost" type="button">Connect</button>
+              <button id="workflowDeleteNodeBtn" class="btn btn-ghost" type="button">Delete Node</button>
+              <button id="workflowClearBtn" class="btn btn-ghost" type="button">Clear</button>
+              <button id="workflowImportSvgBtn" class="btn btn-ghost" type="button">Import SVG</button>
+              <button id="workflowExportSvgBtn" class="btn btn-ghost" type="button">Export SVG</button>
+              <button id="workflowExportPngBtn" class="btn btn-ghost" type="button">Export PNG</button>
+              <input id="workflowImportSvgInput" class="hidden" type="file" accept=".svg,image/svg+xml">
+            </div>
+
+            <div id="workflowHint" class="helper">Tip: select a node, click Connect, then click another node.</div>
+            <div id="workflowCanvas" class="workflow-canvas"></div>
+          </section>
+
+          <section id="itItemPanel" class="panel hidden">
+            <div class="panel-head">
+              <h2>IT Item</h2>
+            </div>
+            <p class="helper">Define IT setup items required during implementation.</p>
+            <div class="document-collection-grid">
+              <details class="document-stage-card it-item-card">
+                <summary class="it-item-summary">Calendar Integration</summary>
+                <div class="it-item-body">
+                  <p class="helper">Configure calendar provider, event sync behavior, and scheduling rules.</p>
+                  <div class="it-item-fields">
+                    <div class="it-item-field">
+                      <label for="calendarClientId">Client_ID</label>
+                      <input id="calendarClientId" type="text" placeholder="Enter Client_ID">
+                    </div>
+                    <div class="it-item-field">
+                      <label for="calendarTenantId">Tenant_ID</label>
+                      <input id="calendarTenantId" type="text" placeholder="Enter Tenant_ID">
+                    </div>
+                  </div>
+                  <div class="it-item-actions">
+                    <a class="btn btn-ghost download-btn" href="assets/docs/Teams Calendar Integration 1.docx" download>⬇ Download Teams Calendar Integration</a>
+                    <button id="calendarSubmitBtn" class="btn btn-primary" type="button">Submit</button>
+                  </div>
+                </div>
+              </details>
+              <details class="document-stage-card it-item-card">
+                <summary class="it-item-summary">Single Sign On (SSO)</summary>
+                <div class="it-item-body">
+                  <p class="helper">Please provide Metadata (.xml) and SSO Signing Certificate (.cer).</p>
+                  <div class="sso-upload-grid">
+                    <div class="sso-upload-card">
+                      <div class="sso-upload-icon" aria-hidden="true">📄</div>
+                      <h4 id="ssoMetadataName" class="sso-upload-title">Metadata (.xml)</h4>
+                      <p id="ssoMetadataMeta" class="sso-upload-meta">No file uploaded</p>
+                      <input id="ssoMetadataInput" class="hidden" type="file" accept=".xml,text/xml,application/xml">
+                      <button id="ssoMetadataUploadBtn" class="btn btn-ghost" type="button">Upload .xml</button>
+                    </div>
+                    <div class="sso-upload-card">
+                      <div class="sso-upload-icon" aria-hidden="true">📜</div>
+                      <h4 id="ssoCertificateName" class="sso-upload-title">Signing Certificate (.cer)</h4>
+                      <p id="ssoCertificateMeta" class="sso-upload-meta">No file uploaded</p>
+                      <input id="ssoCertificateInput" class="hidden" type="file" accept=".cer,application/pkix-cert,application/x-x509-ca-cert">
+                      <button id="ssoCertificateUploadBtn" class="btn btn-ghost" type="button">Upload .cer</button>
+                    </div>
+                  </div>
+                  <div class="it-item-actions">
+                    <a class="btn btn-ghost download-btn" href="assets/docs/Single Sign On.docx" download>⬇ Download Single Sign On</a>
+                    <button id="ssoSubmitBtn" class="btn btn-primary" type="button">Submit</button>
+                  </div>
+                </div>
+              </details>
+              <details class="document-stage-card it-item-card">
+                <summary class="it-item-summary">Akamai CDN</summary>
+                <div class="it-item-body">
+                  <p class="helper">Akamai CDN Configuration</p>
+                  <div class="it-item-field">
+                    <label for="akamaiSubDomain">Career Site Sub-domain</label>
+                    <input id="akamaiSubDomain" type="text" placeholder="jobs.test.com">
+                  </div>
+                  <div class="akamai-record-card">
+                    <h4>DNS TXT Record (Provided by Zwayam)</h4>
+                    <input id="akamaiTxtRecord" type="text" placeholder="Enter TXT record value">
+                    <p>Add this record to your DNS settings for verification.</p>
+                  </div>
+                  <div class="akamai-record-card">
+                    <h4>CNAME Record (Provided by Zwayam)</h4>
+                    <input id="akamaiCnameRecord" type="text" placeholder="Enter CNAME value">
+                    <p>Once verified, add this CNAME to your DNS.</p>
+                  </div>
+                  <div class="it-item-actions">
+                    <a class="btn btn-ghost download-btn" href="assets/docs/Azure Oauth API.docx" download>⬇ Download Azure Oauth API</a>
+                    <button id="akamaiSubmitBtn" class="btn btn-primary" type="button">Submit</button>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </section>
+
+          <section id="dataMigrationPanel" class="panel hidden">
+            <div class="panel-head">
+              <h2>Data Migration</h2>
+            </div>
+            <p class="helper">Capture migration source details, cutover date, and notes for implementation.</p>
+            <div class="document-stage-card it-item-card">
+              <div class="it-item-body">
+                <div class="it-item-field">
+                  <label>Migration Template</label>
+                  <div class="it-item-actions">
+                    <a class="btn btn-ghost download-btn" href="assets/docs/Migration Template Sample.xlsx" download>⬇ Download Migration Template</a>
+                    <input id="dataMigrationTemplateInput" class="hidden" type="file" accept=".xlsx,.xls,.csv">
+                    <button id="dataMigrationTemplateUploadBtn" class="btn btn-ghost" type="button">Upload Filled Template</button>
+                  </div>
+                  <p id="dataMigrationTemplateMeta" class="helper">No template uploaded</p>
+                </div>
+                <div class="it-item-fields">
+                  <div class="it-item-field">
+                    <label for="dataMigrationSource">Migration Source</label>
+                    <input id="dataMigrationSource" type="text" placeholder="Example: Legacy ATS / Vendor">
+                  </div>
+                  <div class="it-item-field">
+                    <label for="dataMigrationCutoverDate">Planned Cutover Date</label>
+                    <input id="dataMigrationCutoverDate" type="date">
+                  </div>
+                </div>
+                <div class="it-item-field">
+                  <label for="dataMigrationNotes">Notes</label>
+                  <textarea id="dataMigrationNotes" rows="4" placeholder="Scope, dependencies, validations, and rollback notes"></textarea>
+                </div>
+                <div class="it-item-actions">
+                  <button id="dataMigrationSubmitBtn" class="btn btn-primary" type="button">Submit</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="taChecklistPanel" class="panel ta-checklist-panel hidden">
+            <div class="panel-head">
+              <h2>TA Checklist</h2>
+              <span id="taChecklistCount" class="pill">0</span>
+            </div>
+            <p class="helper">Client can view this checklist. Admin can update status, dates, and remarks.</p>
+            <div class="ta-table-wrap">
+              <table class="ta-checklist-table">
+                <thead>
+                  <tr>
+                    <th>S.No</th>
+                    <th>TA Requirements</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Module Discussion Date</th>
+                    <th>Expected Date of Closure</th>
+                    <th>Zwayam Remarks</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="taChecklistBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel sql-panel">
+            <details class="sql-details">
+              <summary class="sql-summary">SQL Generator</summary>
+              <div class="sql-body">
+                <div class="drawer-actions">
+                  <button id="generateSqlBtn" class="btn btn-primary" type="button">Generate SQL</button>
+                </div>
+                <textarea id="sqlCanvas" readonly></textarea>
+              </div>
+            </details>
+          </section>
+
+          <section id="csvDownloadPanel" class="panel csv-download-panel">
+            <details class="sql-details">
+              <summary class="sql-summary">CSV Download</summary>
+              <div class="sql-body">
+                <p class="helper">Download requisition setup in multi-sheet format.</p>
+                <div class="drawer-actions">
+                  <button id="downloadRequisitionWorkbookBtn" class="btn btn-primary download-btn" type="button">Download Requisition Export (.xlsx)</button>
+                  <button id="downloadPiiWorkbookBtn" class="btn btn-ghost download-btn" type="button">Download PII Export (.xlsx)</button>
+                  <button id="downloadApplyWorkbookBtn" class="btn btn-ghost download-btn" type="button">Download Apply Export (.xlsx)</button>
+                  <button id="downloadOfferWorkbookBtn" class="btn btn-ghost download-btn" type="button">Download Offer Export (.xlsx)</button>
+                </div>
+              </div>
+            </details>
+          </section>
+
+        </div>
+      </section>
+    </section>
+
+    <button id="chatLauncherBtn" class="chat-launcher" type="button" aria-label="Open chat">
+      <span class="chat-launcher-icon">Chat</span>
+      <span id="chatUnreadCount" class="chat-launcher-badge hidden">0</span>
+    </button>
+
+    <section id="chatPopup" class="chat-popup hidden" aria-label="Client communication chat">
+      <div class="panel-head chat-popup-head">
+        <div class="chat-popup-title-wrap">
+          <h3 id="chatPanelTitle">Client Communication</h3>
+          <span id="chatCount" class="pill">0</span>
+        </div>
+        <button id="closeChatPopupBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+      <div id="chatList" class="chat-list"></div>
+      <div id="chatAttachmentMeta" class="chat-attachment-meta hidden"></div>
+      <div class="chat-compose">
+        <button id="chatAttachBtn" class="btn btn-ghost" type="button">Attach</button>
+        <input id="chatFileInput" class="hidden" type="file">
+        <input id="chatMessageInput" type="text" placeholder="Type your message">
+        <button id="sendChatBtn" class="btn btn-primary" type="button">Send</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="clientModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="clientModalTitle">
+    <div class="modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="clientModalTitle">Add Client</h3>
+        <button id="closeClientModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+
+      <div class="modal-grid">
+        <label for="clientModalName">Client Name</label>
+        <input id="clientModalName" type="text" placeholder="Enter client name">
+
+        <label for="clientUserEmail">Client Login User ID</label>
+        <input id="clientUserEmail" type="text" placeholder="Enter client login user ID">
+
+        <label for="clientUserPassword">Client Login Password (Optional)</label>
+        <input id="clientUserPassword" type="password" placeholder="Optional temporary password">
+
+        <label for="clientSowInput">SoW Document</label>
+        <input id="clientSowInput" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+
+        <label for="integrationCount">Number of Integrations</label>
+        <input id="integrationCount" type="number" min="1" max="10" value="1">
+      </div>
+      <p id="clientSowMeta" class="helper">No SoW uploaded.</p>
+
+      <div id="integrationRows" class="integration-rows"></div>
+
+      <div class="modal-actions">
+        <button id="saveClientBtn" class="btn btn-primary" type="button">Save Client</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="firstLoginResetModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="firstLoginResetModalTitle">
+    <div class="modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="firstLoginResetModalTitle">First Login Password Reset</h3>
+      </div>
+
+      <p class="helper">Set your new password to continue.</p>
+      <div class="modal-grid">
+        <label for="firstLoginUserId">User ID</label>
+        <input id="firstLoginUserId" type="text" disabled>
+
+        <label for="firstLoginNewPassword">New Password</label>
+        <input id="firstLoginNewPassword" type="password" placeholder="Enter new password">
+
+        <label for="firstLoginConfirmPassword">Confirm Password</label>
+        <input id="firstLoginConfirmPassword" type="password" placeholder="Re-enter new password">
+      </div>
+
+      <div class="modal-actions">
+        <button id="firstLoginResetSubmitBtn" class="btn btn-primary" type="button">Reset Password</button>
+        <button id="firstLoginResetCancelBtn" class="btn btn-ghost" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addUserModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addUserModalTitle">
+    <div class="modal-content add-user-modal-content">
+      <div class="panel-head modal-head">
+        <div>
+          <h3 id="addUserModalTitle">Manager User</h3>
+          <p class="helper add-user-modal-subtitle">Create manager users who can manage their own clients.</p>
+        </div>
+        <button id="closeAddUserModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+
+      <div class="panel user-admin-list-wrap">
+        <div class="panel-head">
+          <div class="manager-user-head-left">
+            <h4>Created Users</h4>
+            <span id="managedUserCount" class="pill">0</span>
+          </div>
+          <button id="openManagerUserFormBtn" class="btn btn-primary" type="button">Add User</button>
+        </div>
+        <div id="managedUserListEmpty" class="empty-state">No users created yet.</div>
+        <div id="managedUserListWrap" class="table-wrap hidden">
+          <table class="styled-table managed-user-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>User ID</th>
+                <th>Created On</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="managedUserListBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="managerUserFormModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="managerUserFormModalTitle">
+    <div class="modal-content type-modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="managerUserFormModalTitle">Add User</h3>
+        <button id="closeManagerUserFormModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+
+      <div class="modal-grid add-user-grid">
+        <label for="newUserName">User Name <span class="required-mark">*</span></label>
+        <input id="newUserName" type="text" placeholder="Enter full name" autocomplete="name">
+
+        <label for="newUserEmail">User Email / Login ID <span class="required-mark">*</span></label>
+        <input id="newUserEmail" type="email" placeholder="name@company.com" autocomplete="username">
+
+        <label for="newUserPassword">Temporary Password <span class="required-mark">*</span></label>
+        <input id="newUserPassword" type="password" placeholder="Enter temporary password" autocomplete="new-password">
+        <label class="check-row inline add-user-toggle" for="newUserPasswordToggle">
+          <input id="newUserPasswordToggle" type="checkbox">
+          Show password
+        </label>
+
+        <div class="add-user-form-actions">
+          <button id="saveUserBtn" class="btn btn-primary" type="button">Add User</button>
+          <button id="cancelManagerUserFormBtn" class="btn btn-ghost" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="addFieldModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addFieldModalTitle">
+    <div class="modal-content type-modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="addFieldModalTitle">Add Field</h3>
+        <button id="closeAddFieldModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+
+      <div class="modal-grid">
+        <label for="customFieldLabel">Field Label</label>
+        <input id="customFieldLabel" type="text" placeholder="New field label">
+
+        <label for="customFieldId">Optional Field ID</label>
+        <input id="customFieldId" type="text" placeholder="Optional field ID">
+
+        <label for="customFieldMandatory">Mandatory</label>
+        <label class="check-row inline" for="customFieldMandatory">
+          <input id="customFieldMandatory" type="checkbox">
+          Mandatory field
+        </label>
+
+        <label id="customFieldOfferSectionLabel" class="hidden" for="customFieldOfferSection">Offer Form Section</label>
+        <select id="customFieldOfferSection" class="hidden">
+          <option value="candidate_details">Candidate Details</option>
+          <option value="position_details">Position Details</option>
+          <option value="offer_details" selected>Offer Details</option>
+        </select>
+
+      </div>
+
+      <div class="modal-actions">
+        <button id="addFieldBtn" class="btn btn-primary" type="button">Save Field</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="typeModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="typeModalTitle">
+    <div class="modal-content type-modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="typeModalTitle">Select Data Type</h3>
+        <button id="closeTypeModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+
+      <div class="modal-grid">
+        <label for="fieldTypeSelect">Data Type</label>
+        <select id="fieldTypeSelect">
+          <option value="text">Text</option>
+          <option value="tel">Phone</option>
+          <option value="number">Number</option>
+          <option value="email">Email</option>
+          <option value="date">Date</option>
+          <option value="time">Time</option>
+          <option value="datetime-local">Date & Time</option>
+          <option value="url">URL</option>
+          <option value="file">File Upload</option>
+          <option value="textarea">Text Area</option>
+          <option value="dropdown">Dropdown</option>
+          <option value="dependent">Dependent Field</option>
+        </select>
+
+        <div id="fieldDropdownGroup" class="dependent-field-group hidden">
+          <label for="fieldDropdownOptions">Dropdown Options</label>
+          <input id="fieldDropdownOptions" type="text" placeholder="Comma-separated values">
+        </div>
+
+        <div id="dependentFieldGroup" class="dependent-field-group hidden">
+          <label for="parentFieldLabel">Parent Field Name</label>
+          <input id="parentFieldLabel" type="text" placeholder="Enter parent field name">
+
+          <label for="parentFieldTypeSelect">Parent Field Data Type</label>
+          <select id="parentFieldTypeSelect">
+            <option value="text">Text</option>
+            <option value="tel">Phone</option>
+            <option value="number">Number</option>
+            <option value="email">Email</option>
+            <option value="date">Date</option>
+            <option value="time">Time</option>
+            <option value="datetime-local">Date & Time</option>
+            <option value="url">URL</option>
+            <option value="file">File Upload</option>
+            <option value="textarea">Text Area</option>
+            <option value="dropdown">Dropdown</option>
+          </select>
+
+          <div id="parentDropdownGroup" class="dependent-field-group hidden">
+            <label for="parentDropdownOptions">Parent Dropdown Options</label>
+            <input id="parentDropdownOptions" type="text" placeholder="Comma-separated values">
+          </div>
+
+          <label for="dependentFieldLabel">Child Field Name</label>
+          <input id="dependentFieldLabel" type="text" placeholder="Enter child field name">
+
+          <label for="dependentFieldTypeSelect">Child Field Data Type</label>
+          <select id="dependentFieldTypeSelect">
+            <option value="text">Text</option>
+            <option value="tel">Phone</option>
+            <option value="number">Number</option>
+            <option value="email">Email</option>
+            <option value="date">Date</option>
+            <option value="time">Time</option>
+            <option value="datetime-local">Date & Time</option>
+            <option value="url">URL</option>
+            <option value="file">File Upload</option>
+            <option value="textarea">Text Area</option>
+            <option value="dropdown">Dropdown</option>
+          </select>
+
+          <div id="dependentDropdownGroup" class="dependent-field-group hidden">
+            <label for="dependentDropdownOptions">Child Dropdown Options</label>
+            <input id="dependentDropdownOptions" type="text" placeholder="Comma-separated values">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="confirmTypeBtn" class="btn btn-primary" type="button">Add to Canvas</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="previewModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle">
+    <div class="modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="previewModalTitle">Form Preview</h3>
+        <button id="closePreviewModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+      <div id="previewRequisitionFilterBar" class="preview-filter-bar hidden">
+        <label for="previewDeptSelect">Department</label>
+        <select id="previewDeptSelect"></select>
+        <label for="previewSubDeptSelect">Sub Department</label>
+        <select id="previewSubDeptSelect"></select>
+        <label for="previewGeoSelect">Geo</label>
+        <select id="previewGeoSelect"></select>
+      </div>
+      <p id="previewContextHint" class="helper hidden"></p>
+      <form id="previewForm" class="dynamic-form">
+        <p id="previewFormEmpty" class="empty-state">No fields selected for preview.</p>
+      </form>
+    </div>
+  </div>
+
+  <div id="auditModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="auditModalTitle">
+    <div class="modal-content type-modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="auditModalTitle">Audit Log</h3>
+        <button id="closeAuditModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+      <div class="audit-filter-row">
+        <select id="auditTypeFilter">
+          <option value="all">All Events</option>
+          <option value="field">Field Events</option>
+          <option value="department">Department Events</option>
+          <option value="chat">Chat Events</option>
+          <option value="submission">Submission Events</option>
+        </select>
+        <select id="auditActorFilter">
+          <option value="all">All Actors</option>
+          <option value="admin">Admin</option>
+          <option value="client">Client</option>
+          <option value="system">System</option>
+        </select>
+      </div>
+      <div id="auditLogList" class="audit-log-list"></div>
+    </div>
+  </div>
+
+  <div id="clientDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="clientDetailModalTitle">
+    <div class="modal-content type-modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="clientDetailModalTitle">Client Details</h3>
+        <button id="closeClientDetailModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+      <div id="clientDetailContent" class="client-detail-content"></div>
+    </div>
+  </div>
+
+  <div id="adminSowModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminSowModalTitle">
+    <div class="modal-content type-modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="adminSowModalTitle">SoW Document (Admin)</h3>
+        <button id="closeAdminSowModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+      <p id="adminSowPanelMeta" class="helper">No SoW uploaded.</p>
+      <div class="drawer-actions">
+        <button id="adminSowViewBtn" class="btn btn-ghost" type="button">View SoW</button>
+        <button id="adminSowDownloadBtn" class="btn btn-ghost" type="button">Download SoW</button>
+        <button id="adminSowUploadBtn" class="btn btn-primary" type="button">Upload / Replace SoW</button>
+        <button id="adminSowRemoveBtn" class="btn btn-ghost" type="button">Remove SoW</button>
+        <input id="adminSowFileInput" class="hidden" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteClientAuthModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteClientAuthModalTitle">
+    <div class="modal-content type-modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="deleteClientAuthModalTitle">Confirm Client Removal</h3>
+        <button id="closeDeleteClientAuthModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+      <p class="helper">Enter admin password to confirm client removal.</p>
+      <div class="modal-grid">
+        <label for="deleteClientAuthInput">Admin Password</label>
+        <input id="deleteClientAuthInput" type="password" placeholder="Enter admin password">
+      </div>
+      <div class="modal-actions">
+        <button id="confirmDeleteClientBtn" class="btn btn-primary" type="button">Remove Client</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="newDeptCopyModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="newDeptCopyModalTitle">
+    <div class="modal-content type-modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="newDeptCopyModalTitle">Copy Setup For New Department</h3>
+        <button id="closeNewDeptCopyModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+      <p class="helper">Optional: copy setup from an existing department.</p>
+      <div class="modal-grid">
+        <label for="newDeptCopyFromSelect">Copy From Department</label>
+        <select id="newDeptCopyFromSelect"></select>
+      </div>
+      <div class="check-row inline">
+        <input id="newDeptCopyFieldsCheck" type="checkbox" checked>
+        <label for="newDeptCopyFieldsCheck">Copy Requisition Fields</label>
+      </div>
+      <div class="check-row inline">
+        <input id="newDeptCopyApprovalCheck" type="checkbox" checked>
+        <label for="newDeptCopyApprovalCheck">Copy Approval Matrix</label>
+      </div>
+      <div class="modal-actions">
+        <button id="confirmNewDeptCreateBtn" class="btn btn-primary" type="button">Create Department</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="geoCloneModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="geoCloneModalTitle">
+    <div class="modal-content type-modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="geoCloneModalTitle">Clone Departments To New Geo</h3>
+        <button id="closeGeoCloneModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+      <p class="helper">New Geo: <strong id="geoCloneTargetName"></strong></p>
+      <p class="helper">Select source Geo to copy departments, or skip to create empty Geo.</p>
+      <div class="modal-grid">
+        <label for="geoCloneSourceSelect">Copy From Geo</label>
+        <select id="geoCloneSourceSelect"></select>
+      </div>
+      <div class="modal-actions">
+        <button id="confirmGeoCloneBtn" class="btn btn-primary" type="button">Clone</button>
+        <button id="skipGeoCloneBtn" class="btn btn-ghost" type="button">Skip</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteUserAuthModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteUserAuthModalTitle">
+    <div class="modal-content type-modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="deleteUserAuthModalTitle">Confirm User Removal</h3>
+        <button id="closeDeleteUserAuthModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+      <p class="helper">Enter admin password to confirm user removal.</p>
+      <div class="modal-grid">
+        <label for="deleteUserAuthInput">Admin Password</label>
+        <input id="deleteUserAuthInput" type="password" placeholder="Enter admin password">
+      </div>
+      <div class="modal-actions">
+        <button id="confirmDeleteUserBtn" class="btn btn-primary" type="button">Remove User</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="clientUsersModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="clientUsersModalTitle">
+    <div class="modal-content add-user-modal-content">
+      <div class="panel-head modal-head">
+        <div>
+          <h3 id="clientUsersModalTitle">Client Users</h3>
+          <p class="helper add-user-modal-subtitle">Create users for this client and assign section access.</p>
+        </div>
+        <button id="closeClientUsersModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+
+      <div id="clientUserFormWrap" class="modal-grid add-user-grid client-users-form-wrap">
+        <label for="clientSubUserName">User Name <span class="required-mark">*</span></label>
+        <input id="clientSubUserName" type="text" placeholder="Enter full name" autocomplete="name">
+
+        <label for="clientSubUserEmail">User Email / Login ID <span class="required-mark">*</span></label>
+        <input id="clientSubUserEmail" type="email" placeholder="name@company.com" autocomplete="username">
+
+        <label for="clientSubUserPassword">Password <span class="required-mark">*</span></label>
+        <input id="clientSubUserPassword" type="password" placeholder="Enter password" autocomplete="new-password">
+        <label class="check-row inline add-user-toggle" for="clientSubUserPasswordToggle">
+          <input id="clientSubUserPasswordToggle" type="checkbox">
+          Show password
+        </label>
+
+        <label>Section Access <span class="required-mark">*</span></label>
+        <div id="clientSubUserAccessGrid" class="client-user-access-grid">
+          <label class="check-row inline"><input type="checkbox" value="requisition" checked> Requisition Form</label>
+          <label class="check-row inline"><input type="checkbox" value="pii" checked> PII Form</label>
+          <label class="check-row inline"><input type="checkbox" value="apply" checked> Apply Form</label>
+          <label class="check-row inline"><input type="checkbox" value="document_collection" checked> Document Collection</label>
+          <label class="check-row inline"><input type="checkbox" value="fitment" checked> Fitment & Offer</label>
+          <label class="check-row inline"><input type="checkbox" value="workflow" checked> Workflow</label>
+          <label class="check-row inline"><input type="checkbox" value="it_item" checked> IT Item</label>
+          <label class="check-row inline"><input type="checkbox" value="data_migration" checked> Data Migration</label>
+        </div>
+
+        <div class="add-user-form-actions">
+          <button id="saveClientUserBtn" class="btn btn-primary" type="button">Add User</button>
+          <button id="cancelClientUserFormBtn" class="btn btn-ghost" type="button">Cancel</button>
+        </div>
+      </div>
+
+      <div class="panel user-admin-list-wrap">
+        <div class="panel-head">
+          <div class="manager-user-head-left">
+            <h4>Created Users</h4>
+            <span id="clientUsersCount" class="pill">0</span>
+          </div>
+        </div>
+        <div id="clientUsersListEmpty" class="empty-state">No users created for this client yet.</div>
+        <div id="clientUsersListWrap" class="table-wrap hidden">
+          <table class="styled-table managed-user-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>User ID</th>
+                <th>Access</th>
+                <th>Created On</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="clientUsersListBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="clientUserAccessModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="clientUserAccessModalTitle">
+    <div class="modal-content type-modal-content">
+      <div class="panel-head modal-head">
+        <h3 id="clientUserAccessModalTitle">Edit User Access</h3>
+        <button id="closeClientUserAccessModalBtn" class="btn btn-ghost" type="button">Close</button>
+      </div>
+      <p id="clientUserAccessTarget" class="helper"></p>
+      <div id="clientUserAccessEditGrid" class="client-user-access-grid">
+        <label class="check-row inline"><input type="checkbox" value="requisition"> Requisition Form</label>
+        <label class="check-row inline"><input type="checkbox" value="pii"> PII Form</label>
+        <label class="check-row inline"><input type="checkbox" value="apply"> Apply Form</label>
+        <label class="check-row inline"><input type="checkbox" value="document_collection"> Document Collection</label>
+        <label class="check-row inline"><input type="checkbox" value="fitment"> Fitment & Offer</label>
+        <label class="check-row inline"><input type="checkbox" value="workflow"> Workflow</label>
+        <label class="check-row inline"><input type="checkbox" value="it_item"> IT Item</label>
+        <label class="check-row inline"><input type="checkbox" value="data_migration"> Data Migration</label>
+      </div>
+      <div class="modal-actions">
+        <button id="saveClientUserAccessBtn" class="btn btn-primary" type="button">Save Access</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="Script.js"></script>
+</body>
+</html>
