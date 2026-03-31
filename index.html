@@ -354,6 +354,7 @@
                 </div>
                 <div class="document-add-row">
                   <input id="preOfferDocInput" type="text" placeholder="Add pre-offer document">
+                  <input id="preOfferDocRemarkInput" type="text" placeholder="Add remark (optional)">
                   <button id="addPreOfferDocBtn" class="btn btn-primary" type="button">Add</button>
                 </div>
                 <div id="preOfferDocList" class="document-list"></div>
@@ -364,6 +365,7 @@
                 </div>
                 <div class="document-add-row">
                   <input id="postOfferDocInput" type="text" placeholder="Add post-offer document">
+                  <input id="postOfferDocRemarkInput" type="text" placeholder="Add remark (optional)">
                   <button id="addPostOfferDocBtn" class="btn btn-primary" type="button">Add</button>
                 </div>
                 <div id="postOfferDocList" class="document-list"></div>
@@ -607,6 +609,7 @@
       <div id="chatAttachmentMeta" class="chat-attachment-meta hidden"></div>
       <div class="chat-compose">
         <button id="chatAttachBtn" class="btn btn-ghost" type="button">Attach</button>
+        <button id="chatFaqBtn" class="btn btn-ghost" type="button">FAQ</button>
         <input id="chatFileInput" class="hidden" type="file">
         <input id="chatMessageInput" type="text" placeholder="Type your message">
         <button id="sendChatBtn" class="btn btn-primary" type="button">Send</button>
@@ -630,6 +633,12 @@
 
         <label for="clientUserPassword">Client Login Password (Optional)</label>
         <input id="clientUserPassword" type="password" placeholder="Optional temporary password">
+
+        <label for="clientProduct">Product</label>
+        <select id="clientProduct">
+          <option value="Standard" selected>Standard</option>
+          <option value="Premium">Premium</option>
+        </select>
 
         <label for="clientSowInput">SoW Document</label>
         <input id="clientSowInput" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
@@ -914,19 +923,54 @@
   </div>
 
   <div id="adminSowModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminSowModalTitle">
-    <div class="modal-content type-modal-content">
+    <div class="modal-content type-modal-content sow-modal-content">
       <div class="panel-head modal-head">
         <h3 id="adminSowModalTitle">SoW Document (Admin)</h3>
         <button id="closeAdminSowModalBtn" class="btn btn-ghost" type="button">Close</button>
       </div>
-      <p id="adminSowPanelMeta" class="helper">No SoW uploaded.</p>
-      <div class="drawer-actions">
-        <button id="adminSowViewBtn" class="btn btn-ghost" type="button">View SoW</button>
+      <div class="sow-status-card">
+        <p id="adminSowPanelMeta" class="helper">No SoW uploaded.</p>
+      </div>
+      <div class="modal-grid sow-form-grid">
+        <label for="adminSowSectionSelect">Section</label>
+        <select id="adminSowSectionSelect">
+          <option value="">Select section</option>
+          <option value="requisition">Requisition Form</option>
+          <option value="pii">PII Form</option>
+          <option value="apply">Apply Form</option>
+          <option value="document_collection">Document Collection</option>
+          <option value="fitment">Fitment & Offer</option>
+          <option value="workflow">Workflow</option>
+          <option value="it_item">IT Item</option>
+          <option value="data_migration">Data Migration</option>
+          <option value="ta_checklist">TA Checklist</option>
+        </select>
+        <label for="adminSowRemarkInput">Remark</label>
+        <input id="adminSowRemarkInput" type="text" placeholder="Add remark">
+      </div>
+      <div class="drawer-actions sow-action-row">
         <button id="adminSowDownloadBtn" class="btn btn-ghost" type="button">Download SoW</button>
         <button id="adminSowUploadBtn" class="btn btn-primary" type="button">Upload / Replace SoW</button>
+        <button id="adminSowSubmitBtn" class="btn btn-primary" type="button">Submit</button>
         <button id="adminSowRemoveBtn" class="btn btn-ghost" type="button">Remove SoW</button>
         <input id="adminSowFileInput" class="hidden" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
       </div>
+      <details id="adminSowHistoryDetails" class="sow-history-details">
+        <summary class="sow-history-summary">
+          <span>Version History</span>
+          <span id="adminSowHistoryCount" class="pill">0</span>
+        </summary>
+        <div class="sow-history-controls">
+          <label for="adminSowHistorySort">Sort</label>
+          <select id="adminSowHistorySort">
+            <option value="newest" selected>Newest</option>
+            <option value="oldest">Oldest</option>
+          </select>
+        </div>
+        <div id="adminSowHistoryList" class="sow-history-list">
+          <p class="empty-state">No SoW versions yet.</p>
+        </div>
+      </details>
     </div>
   </div>
 

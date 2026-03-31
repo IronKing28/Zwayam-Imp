@@ -293,6 +293,69 @@ const MAIN_GEO_KEY = "__main_geo__";
 const PII_DEFAULT_GEO_KEY = "__pii_default_geo__";
 const APPLY_DEFAULT_GEO_KEY = "__apply_default_geo__";
 const APPLY_SOURCE_OPTIONS = ["Career Site", "Recruiter Upload", "Employee Referral", "IJP"];
+const CLIENT_PRODUCT_OPTIONS = ["Standard", "Premium"];
+const CHAT_FAQ_LIBRARY = [
+  {
+    id: "faq_add_client",
+    question: "How do I add a new client?",
+    keywords: ["add client", "new client", "create client", "client setup"],
+    answer: "Go to Clients -> Add Client, enter client details, set integrations, and click Save Client."
+  },
+  {
+    id: "faq_manage_users",
+    question: "How do I create manager or client users?",
+    keywords: ["manager user", "client users", "add user", "section access"],
+    answer: "Use Manager User for manager accounts. Use Client Users inside a client workspace to create users and assign section access."
+  },
+  {
+    id: "faq_requisition_canvas",
+    question: "How do I configure requisition fields?",
+    keywords: ["requisition fields", "form canvas", "drag fields", "submit canvas"],
+    answer: "Open Requisition Form, select Geo/Department workspace, add/import fields, drag to canvas, reorder, and click Submit Canvas."
+  },
+  {
+    id: "faq_pii_apply_filters",
+    question: "How do PII and Apply filters work?",
+    keywords: ["pii", "apply", "geo filter", "source filter", "apply source"],
+    answer: "PII uses Geo and Section controls. Apply uses Geo and Source filters. Select the context first, then maintain fields on canvas."
+  },
+  {
+    id: "faq_document_collection",
+    question: "How do I add document collection items with remarks?",
+    keywords: ["document collection", "pre offer", "post offer", "remark"],
+    answer: "In Document Collection, choose Geo, enter document name and optional remark in Pre-Offer or Post-Offer, then click Add."
+  },
+  {
+    id: "faq_sow",
+    question: "How do I upload and manage SoW?",
+    keywords: ["sow", "statement of work", "upload sow", "version history"],
+    answer: "Upload SoW in Add Client or Admin SoW popup. Admin can update section/remark, submit changes, and review version history."
+  },
+  {
+    id: "faq_workflow",
+    question: "How do I use the workflow builder?",
+    keywords: ["workflow", "node", "connect", "export svg", "export png"],
+    answer: "Go to Workflow tab, add nodes (Start/Step/Decision/End), connect them, then export as SVG or PNG if needed."
+  },
+  {
+    id: "faq_exports",
+    question: "How do I export setup data?",
+    keywords: ["export", "download", "xlsx", "sql", "csv download"],
+    answer: "Use CSV Download for Requisition/PII/Apply/Offer workbook exports. Use SQL Generator to create SQL from configured fields."
+  },
+  {
+    id: "faq_audit",
+    question: "Where can I check history of changes?",
+    keywords: ["audit", "history", "changes", "log"],
+    answer: "Open Audit Log from the client workspace header. Filter by event type and actor to trace configuration and chat updates."
+  },
+  {
+    id: "faq_permissions",
+    question: "Why are some buttons disabled?",
+    keywords: ["disabled", "permission", "read only", "access"],
+    answer: "Buttons are disabled when your role lacks access or when required context (like active Geo/Department) is not selected."
+  }
+];
 
 const integrationOptions = ["Upstream", "Assessment", "E-Sign", "BGV", "Downstream"];
 const STORAGE_KEY = "zwayam_form_builder_clients_v1";
@@ -328,6 +391,11 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function normalizeClientProduct(value) {
+  const selected = String(value || "").trim();
+  return CLIENT_PRODUCT_OPTIONS.includes(selected) ? selected : "Standard";
+}
+
 const loginRoot = document.getElementById("loginRoot");
 const appRoot = document.getElementById("appRoot");
 const loginEmail = document.getElementById("loginEmail");
@@ -349,6 +417,7 @@ const clientModalTitle = document.getElementById("clientModalTitle");
 const clientModalName = document.getElementById("clientModalName");
 const clientUserEmail = document.getElementById("clientUserEmail");
 const clientUserPassword = document.getElementById("clientUserPassword");
+const clientProduct = document.getElementById("clientProduct");
 const clientSowInput = document.getElementById("clientSowInput");
 const clientSowMeta = document.getElementById("clientSowMeta");
 const integrationCount = document.getElementById("integrationCount");
@@ -384,11 +453,17 @@ const adminSowManageBtn = document.getElementById("adminSowManageBtn");
 const adminSowModal = document.getElementById("adminSowModal");
 const closeAdminSowModalBtn = document.getElementById("closeAdminSowModalBtn");
 const adminSowPanelMeta = document.getElementById("adminSowPanelMeta");
-const adminSowViewBtn = document.getElementById("adminSowViewBtn");
 const adminSowDownloadBtn = document.getElementById("adminSowDownloadBtn");
 const adminSowUploadBtn = document.getElementById("adminSowUploadBtn");
+const adminSowSubmitBtn = document.getElementById("adminSowSubmitBtn");
 const adminSowRemoveBtn = document.getElementById("adminSowRemoveBtn");
 const adminSowFileInput = document.getElementById("adminSowFileInput");
+const adminSowSectionSelect = document.getElementById("adminSowSectionSelect");
+const adminSowRemarkInput = document.getElementById("adminSowRemarkInput");
+const adminSowHistoryDetails = document.getElementById("adminSowHistoryDetails");
+const adminSowHistoryCount = document.getElementById("adminSowHistoryCount");
+const adminSowHistoryList = document.getElementById("adminSowHistoryList");
+const adminSowHistorySort = document.getElementById("adminSowHistorySort");
 const clientPageTabs = document.getElementById("clientPageTabs");
 const fitmentOfferSwitcher = document.getElementById("fitmentOfferSwitcher");
 const projectTrackerLink = document.getElementById("projectTrackerLink");
@@ -452,9 +527,11 @@ const documentCollectionGeoBar = document.getElementById("documentCollectionGeoB
 const documentCollectionGeoSelect = document.getElementById("documentCollectionGeoSelect");
 const documentCollectionAddGeoBtn = document.getElementById("documentCollectionAddGeoBtn");
 const preOfferDocInput = document.getElementById("preOfferDocInput");
+const preOfferDocRemarkInput = document.getElementById("preOfferDocRemarkInput");
 const addPreOfferDocBtn = document.getElementById("addPreOfferDocBtn");
 const preOfferDocList = document.getElementById("preOfferDocList");
 const postOfferDocInput = document.getElementById("postOfferDocInput");
+const postOfferDocRemarkInput = document.getElementById("postOfferDocRemarkInput");
 const addPostOfferDocBtn = document.getElementById("addPostOfferDocBtn");
 const postOfferDocList = document.getElementById("postOfferDocList");
 const fitmentPanel = document.getElementById("fitmentPanel");
@@ -628,6 +705,7 @@ const chatUnreadCount = document.getElementById("chatUnreadCount");
 const chatPopup = document.getElementById("chatPopup");
 const closeChatPopupBtn = document.getElementById("closeChatPopupBtn");
 const chatAttachBtn = document.getElementById("chatAttachBtn");
+const chatFaqBtn = document.getElementById("chatFaqBtn");
 const chatFileInput = document.getElementById("chatFileInput");
 const chatAttachmentMeta = document.getElementById("chatAttachmentMeta");
 
@@ -646,9 +724,14 @@ let editingClientId = null;
 let pendingClientSowDocument = null;
 let selectedWorkflowNodeId = null;
 let workflowConnectFromNodeId = null;
+let sowBinaryDbPromise = null;
+let adminSowBinaryCheckToken = 0;
 
 const CHAT_MAX_FILE_BYTES = 1024 * 1024 * 1.5; // 1.5 MB for localStorage safety
 const SOW_MAX_FILE_BYTES = 1024 * 1024 * 1.5; // 1.5 MB to keep storage stable
+const SOW_BINARY_DB_NAME = "zwayam_form_builder_sow_v1";
+const SOW_BINARY_DB_VERSION = 1;
+const SOW_BINARY_STORE = "client_sow_binary";
 
 function cloneBaseFields(list) {
   return list.map(field => ({ ...field, isCustom: false }));
@@ -882,10 +965,31 @@ function createDefaultDocumentCollection() {
   };
 }
 
+function normalizeDocumentCollectionItem(item) {
+  if (typeof item === "string") {
+    const name = item.trim();
+    return name ? { name, remark: "" } : null;
+  }
+  if (!item || typeof item !== "object") return null;
+  const name = String(item.name || "").trim();
+  if (!name) return null;
+  const remark = String(item.remark || "").trim();
+  return { name, remark };
+}
+
 function sanitizeDocumentList(list) {
-  return Array.isArray(list)
-    ? list.map(item => String(item || "").trim()).filter(Boolean)
-    : [];
+  if (!Array.isArray(list)) return [];
+  const normalized = [];
+  const seen = new Set();
+  list.forEach(item => {
+    const doc = normalizeDocumentCollectionItem(item);
+    if (!doc) return;
+    const key = doc.name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    normalized.push(doc);
+  });
+  return normalized;
 }
 
 function getDocumentCollectionActiveGeo(client) {
@@ -1961,19 +2065,22 @@ function createBlankTaChecklistRow(nextIndex) {
   };
 }
 
-function createClientState(name, integrations, loginEmail, loginPassword, ownerUserId = AUTH.admin.email, sowDocument = null) {
+function createClientState(name, integrations, loginEmail, loginPassword, ownerUserId = AUTH.admin.email, sowDocument = null, product = "Standard") {
   const requisitionPage = createPageState(BASE_FIELDS);
   ensureDefaultRequisitionCanvas(requisitionPage);
   const piiPage = createPageState(PII_BASE_FIELDS);
   const applyPage = createPageState(APPLY_BASE_FIELDS);
   ensureDefaultApplyCanvas(applyPage);
+  const normalizedSow = normalizeClientSowDocument(sowDocument);
   const client = {
     id: `c_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
     name,
     ownerUserId: String(ownerUserId || AUTH.admin.email).trim().toLowerCase(),
     loginEmail,
     loginPassword: loginPassword || "",
-    sowDocument: normalizeClientSowDocument(sowDocument),
+    product: normalizeClientProduct(product),
+    sowDocument: normalizedSow,
+    sowVersionHistory: normalizedSow ? [createSowHistoryEntryFromDocument(normalizedSow)] : [],
     forcePasswordReset: true,
     clientUsers: [],
     integrations,
@@ -2083,7 +2190,9 @@ function deserializeClients(raw) {
     ownerUserId: String(client.ownerUserId || AUTH.admin.email).trim().toLowerCase(),
     loginEmail: (client.loginEmail || client.clientEmail || client.userEmail || "").toLowerCase(),
     loginPassword: client.loginPassword || client.clientPassword || client.userPassword || "",
+    product: normalizeClientProduct(client.product || client.clientProduct),
     sowDocument: normalizeClientSowDocument(client.sowDocument),
+    sowVersionHistory: normalizeClientSowHistory(client.sowVersionHistory),
     forcePasswordReset: typeof client.forcePasswordReset === "boolean"
       ? client.forcePasswordReset
       : !(client.loginPassword || client.clientPassword || client.userPassword || "").trim(),
@@ -2156,6 +2265,11 @@ function deserializeClients(raw) {
       : { admin: null, client: null },
     availableIds: new Set(client.availableIds || [])
   })).map(client => {
+    client.sowVersionHistory = normalizeClientSowHistory(client.sowVersionHistory);
+    if (!client.sowVersionHistory.length) {
+      const sow = normalizeClientSowDocument(client.sowDocument);
+      if (sow) client.sowVersionHistory = [createSowHistoryEntryFromDocument(sow)];
+    }
     ensureClientPages(client);
     ensureTaChecklist(client);
     ensureDocumentCollection(client);
@@ -2182,24 +2296,14 @@ function deserializeClients(raw) {
   });
 }
 
-function saveClients(options = {}) {
-  const showError = Boolean(options && options.showError);
-  const actionLabel = String(options && options.action ? options.action : "save changes");
+function saveClients() {
   memoryClientsSnapshot = serializeClients(clients);
   lastSyncedSignature = JSON.stringify(memoryClientsSnapshot);
-  let persisted = true;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryClientsSnapshot));
     localStorage.setItem(SCHEMA_VERSION_KEY, String(CURRENT_DATA_SCHEMA_VERSION));
   } catch (error) {
-    persisted = false;
-    if (showError) {
-      const quotaError = error && (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED");
-      const message = quotaError
-        ? `Unable to ${actionLabel}. Browser storage is full. Remove large uploads and try again.`
-        : `Unable to ${actionLabel}. Please try again.`;
-      window.alert(message);
-    }
+    // ignore storage failures
   }
   if (syncChannel) {
     try {
@@ -2208,7 +2312,6 @@ function saveClients(options = {}) {
       // ignore channel failures
     }
   }
-  return persisted;
 }
 
 function normalizeManagedUsers(list) {
@@ -2446,6 +2549,18 @@ function applyRoleUI() {
   if (roleBadge) roleBadge.textContent = currentRole ? currentRole.toUpperCase() : "Role";
 }
 
+function setRootVisibility(showApp) {
+  const showWorkspace = Boolean(showApp);
+  if (loginRoot) {
+    loginRoot.classList.toggle("hidden", showWorkspace);
+    loginRoot.style.display = showWorkspace ? "none" : "grid";
+  }
+  if (appRoot) {
+    appRoot.classList.toggle("hidden", !showWorkspace);
+    appRoot.style.display = showWorkspace ? "" : "none";
+  }
+}
+
 function refreshClientsFromStorage() {
   const loadedClients = loadClients();
   const nextSignature = getClientsSignature(loadedClients || []);
@@ -2454,6 +2569,7 @@ function refreshClientsFromStorage() {
   clients = loadedClients || [];
   memoryClientsSnapshot = serializeClients(clients);
   lastSyncedSignature = nextSignature;
+  migrateLegacySowDocumentsToBinaryStore();
 
   const visibleClients = getVisibleClientsForCurrentRole();
   if (activeClientId && !visibleClients.some(client => client.id === activeClientId)) {
@@ -2498,8 +2614,7 @@ function login(role, options = {}) {
     }
   }
   persistSession();
-  if (loginRoot) loginRoot.classList.add("hidden");
-  if (appRoot) appRoot.classList.remove("hidden");
+  setRootVisibility(true);
   applyRoleUI();
   startSyncPolling();
   renderAll();
@@ -2519,8 +2634,7 @@ function logout() {
     // ignore storage failures
   }
   stopSyncPolling();
-  if (appRoot) appRoot.classList.add("hidden");
-  if (loginRoot) loginRoot.classList.remove("hidden");
+  setRootVisibility(false);
   if (loginPassword) loginPassword.value = "";
   if (loginError) loginError.classList.add("hidden");
   applyRoleUI();
@@ -4533,8 +4647,10 @@ function renderDocumentCollection() {
 
   const disableStageInputs = !canEdit || !activeGeo;
   if (preOfferDocInput) preOfferDocInput.disabled = disableStageInputs;
+  if (preOfferDocRemarkInput) preOfferDocRemarkInput.disabled = disableStageInputs;
   if (addPreOfferDocBtn) addPreOfferDocBtn.disabled = disableStageInputs;
   if (postOfferDocInput) postOfferDocInput.disabled = disableStageInputs;
+  if (postOfferDocRemarkInput) postOfferDocRemarkInput.disabled = disableStageInputs;
   if (addPostOfferDocBtn) addPostOfferDocBtn.disabled = disableStageInputs;
 
   const renderStage = (container, docs, stageKey) => {
@@ -4546,10 +4662,16 @@ function renderDocumentCollection() {
       return;
     }
     docs.forEach((doc, index) => {
+      const docName = String(doc?.name || "").trim();
+      if (!docName) return;
+      const docRemark = String(doc?.remark || "").trim();
       const row = document.createElement("div");
       row.className = "document-item";
       row.innerHTML = `
-        <span>${escapeHtml(doc)}</span>
+        <div class="document-item-content">
+          <span class="document-item-name">${escapeHtml(docName)}</span>
+          ${docRemark ? `<span class="document-item-remark">${escapeHtml(docRemark)}</span>` : ""}
+        </div>
         ${canEdit ? `<button class="remove-field-btn" type="button" data-doc-stage="${stageKey}" data-doc-index="${index}">Remove</button>` : '<span class="ta-readonly-tag">Read only</span>'}
       `;
       container.appendChild(row);
@@ -6714,6 +6836,266 @@ function formatFileSize(bytes) {
   return `${(value / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function canUseSowBinaryStore() {
+  return typeof window !== "undefined" && typeof window.indexedDB !== "undefined";
+}
+
+function openSowBinaryDb() {
+  if (!canUseSowBinaryStore()) return Promise.resolve(null);
+  if (sowBinaryDbPromise) return sowBinaryDbPromise;
+  sowBinaryDbPromise = new Promise(resolve => {
+    let request;
+    try {
+      request = window.indexedDB.open(SOW_BINARY_DB_NAME, SOW_BINARY_DB_VERSION);
+    } catch (error) {
+      resolve(null);
+      return;
+    }
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(SOW_BINARY_STORE)) {
+        db.createObjectStore(SOW_BINARY_STORE, { keyPath: "clientId" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => resolve(null);
+    request.onblocked = () => resolve(null);
+  });
+  return sowBinaryDbPromise;
+}
+
+async function putSowBinaryForClient(clientId, sowDoc) {
+  const id = String(clientId || "").trim();
+  const doc = normalizeClientSowDocument(sowDoc);
+  const dataUrl = doc ? String(doc.dataUrl || "").trim() : "";
+  if (!id || !doc || !dataUrl) return false;
+  const db = await openSowBinaryDb();
+  if (!db) return false;
+  return new Promise(resolve => {
+    let settled = false;
+    const done = value => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    let tx;
+    try {
+      tx = db.transaction(SOW_BINARY_STORE, "readwrite");
+      const store = tx.objectStore(SOW_BINARY_STORE);
+      const req = store.put({
+        clientId: id,
+        dataUrl,
+        name: doc.name,
+        type: doc.type,
+        size: doc.size,
+        uploadedAt: doc.uploadedAt,
+        updatedAt: Date.now()
+      });
+      req.onsuccess = () => done(true);
+      req.onerror = () => done(false);
+      tx.onabort = () => done(false);
+      tx.onerror = () => done(false);
+    } catch (error) {
+      done(false);
+    }
+  });
+}
+
+async function getSowBinaryForClient(clientId) {
+  const id = String(clientId || "").trim();
+  if (!id) return null;
+  const db = await openSowBinaryDb();
+  if (!db) return null;
+  return new Promise(resolve => {
+    let settled = false;
+    const done = value => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    let tx;
+    try {
+      tx = db.transaction(SOW_BINARY_STORE, "readonly");
+      const store = tx.objectStore(SOW_BINARY_STORE);
+      const req = store.get(id);
+      req.onsuccess = () => done(req.result || null);
+      req.onerror = () => done(null);
+      tx.onabort = () => done(null);
+      tx.onerror = () => done(null);
+    } catch (error) {
+      done(null);
+    }
+  });
+}
+
+async function hasSowBinaryForClient(clientId) {
+  const record = await getSowBinaryForClient(clientId);
+  return Boolean(record && String(record.dataUrl || "").trim());
+}
+
+async function deleteSowBinaryForClient(clientId) {
+  const id = String(clientId || "").trim();
+  if (!id) return false;
+  const db = await openSowBinaryDb();
+  if (!db) return false;
+  return new Promise(resolve => {
+    let settled = false;
+    const done = value => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    let tx;
+    try {
+      tx = db.transaction(SOW_BINARY_STORE, "readwrite");
+      const store = tx.objectStore(SOW_BINARY_STORE);
+      const req = store.delete(id);
+      req.onsuccess = () => done(true);
+      req.onerror = () => done(false);
+      tx.onabort = () => done(false);
+      tx.onerror = () => done(false);
+    } catch (error) {
+      done(false);
+    }
+  });
+}
+
+function stripSowDocumentBinary(sowDoc) {
+  const normalized = normalizeClientSowDocument(sowDoc);
+  if (!normalized) return null;
+  return {
+    ...normalized,
+    dataUrl: ""
+  };
+}
+
+async function persistSowDocumentForClient(clientId, sowDoc) {
+  const normalized = normalizeClientSowDocument(sowDoc);
+  if (!normalized) {
+    await deleteSowBinaryForClient(clientId);
+    return null;
+  }
+  const hasInlineData = Boolean(String(normalized.dataUrl || "").trim());
+  if (hasInlineData) {
+    if (!canUseSowBinaryStore()) return normalized;
+    const stored = await putSowBinaryForClient(clientId, normalized);
+    if (!stored) return normalized;
+  }
+  return hasInlineData ? stripSowDocumentBinary(normalized) : normalized;
+}
+
+async function resolveSowDataUrlForClient(client) {
+  const active = client && typeof client === "object" ? client : null;
+  if (!active) return "";
+  const sow = normalizeClientSowDocument(active.sowDocument);
+  if (!sow) return "";
+  if (sow.dataUrl) return sow.dataUrl;
+  const stored = await getSowBinaryForClient(active.id);
+  return stored && typeof stored.dataUrl === "string" ? String(stored.dataUrl).trim() : "";
+}
+
+async function migrateLegacySowDocumentsToBinaryStore() {
+  if (!canUseSowBinaryStore()) return;
+  if (!Array.isArray(clients) || !clients.length) return;
+  let changed = false;
+  for (let index = 0; index < clients.length; index += 1) {
+    const client = clients[index];
+    const sow = normalizeClientSowDocument(client && client.sowDocument);
+    if (!client || !sow || !sow.dataUrl) continue;
+    const stored = await putSowBinaryForClient(client.id, sow);
+    if (!stored) continue;
+    client.sowDocument = stripSowDocumentBinary(sow);
+    changed = true;
+  }
+  if (changed) {
+    saveClients();
+    renderAdminSowPanel();
+  }
+}
+
+function normalizeClientSowHistoryEntry(value) {
+  if (!value || typeof value !== "object") return null;
+  const name = String(value.name || "").trim();
+  if (!name) return null;
+  const size = Number(value.size || 0);
+  return {
+    name,
+    size: Number.isFinite(size) && size > 0 ? size : 0,
+    type: String(value.type || "").trim(),
+    uploadedAt: String(value.uploadedAt || "").trim(),
+    section: String(value.section || "").trim(),
+    remark: String(value.remark || "").trim()
+  };
+}
+
+function normalizeClientSowHistory(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map(item => normalizeClientSowHistoryEntry(item)).filter(Boolean);
+}
+
+function createSowHistoryEntryFromDocument(sowDoc) {
+  const sow = normalizeClientSowDocument(sowDoc);
+  if (!sow) return null;
+  return normalizeClientSowHistoryEntry({
+    name: sow.name,
+    size: sow.size,
+    type: sow.type,
+    uploadedAt: sow.uploadedAt,
+    section: sow.section,
+    remark: sow.remark
+  });
+}
+
+function addSowHistoryEntry(client, sowDoc) {
+  if (!client) return;
+  client.sowVersionHistory = normalizeClientSowHistory(client.sowVersionHistory);
+  const entry = createSowHistoryEntryFromDocument(sowDoc);
+  if (!entry) return;
+  client.sowVersionHistory.unshift(entry);
+}
+
+function renderAdminSowHistory(client) {
+  if (!adminSowHistoryList || !adminSowHistoryCount) return;
+  const active = client && typeof client === "object" ? client : null;
+  const history = active ? normalizeClientSowHistory(active.sowVersionHistory) : [];
+  adminSowHistoryCount.textContent = String(history.length);
+  if (adminSowHistorySort) adminSowHistorySort.disabled = history.length <= 1;
+  if (!history.length && adminSowHistoryDetails) adminSowHistoryDetails.open = false;
+  if (!history.length) {
+    adminSowHistoryList.innerHTML = '<p class="empty-state">No SoW versions yet.</p>';
+    return;
+  }
+  const order = adminSowHistorySort ? String(adminSowHistorySort.value || "newest") : "newest";
+  const items = history.map((entry, index) => ({
+    entry,
+    versionNumber: history.length - index
+  }));
+  const ordered = order === "oldest"
+    ? [...items].sort((a, b) => a.versionNumber - b.versionNumber)
+    : [...items].sort((a, b) => b.versionNumber - a.versionNumber);
+  adminSowHistoryList.innerHTML = ordered.map(item => {
+    const entry = item.entry;
+    const version = `v${item.versionNumber}`;
+    const uploadedText = entry.uploadedAt ? escapeHtml(entry.uploadedAt) : "NA";
+    const sectionText = entry.section ? escapeHtml(getPageLabel(entry.section)) : "NA";
+    const sizeText = entry.size ? escapeHtml(formatFileSize(entry.size)) : "0 B";
+    const remarkText = entry.remark ? escapeHtml(entry.remark) : "NA";
+    return `
+      <details class="sow-history-item">
+        <summary class="sow-history-item-summary">
+          <span class="sow-history-item-title">${version} | ${escapeHtml(entry.name)}</span>
+          <span class="sow-history-item-date">${uploadedText}</span>
+        </summary>
+        <div class="sow-history-item-body">
+          <p class="sow-history-meta"><strong>Section:</strong> ${sectionText}</p>
+          <p class="sow-history-meta"><strong>Remark:</strong> ${remarkText}</p>
+          <p class="sow-history-meta"><strong>Size:</strong> ${sizeText}</p>
+        </div>
+      </details>
+    `;
+  }).join("");
+}
+
 function normalizeClientSowDocument(value) {
   if (!value || typeof value !== "object") return null;
   const name = String(value.name || "").trim();
@@ -6725,11 +7107,13 @@ function normalizeClientSowDocument(value) {
     size: Number.isFinite(size) && size > 0 ? size : 0,
     type: String(value.type || "").trim(),
     uploadedAt: String(value.uploadedAt || "").trim(),
+    section: String(value.section || "").trim(),
+    remark: String(value.remark || "").trim(),
     dataUrl: dataUrl || ""
   };
 }
 
-async function createClientSowDocumentFromFile(file) {
+async function createClientSowDocumentFromFile(file, options = {}) {
   if (!file) return null;
   if (Number(file.size || 0) > SOW_MAX_FILE_BYTES) {
     window.alert(`SoW file is too large. Maximum allowed is ${formatFileSize(SOW_MAX_FILE_BYTES)}.`);
@@ -6743,11 +7127,15 @@ async function createClientSowDocumentFromFile(file) {
     window.alert("Unable to read SoW file. Please try again.");
     return null;
   }
+  const section = String(options.section || "").trim();
+  const remark = String(options.remark || "").trim();
   return normalizeClientSowDocument({
     name: file.name || "SoW",
     size: Number(file.size || 0),
     type: file.type || "",
     uploadedAt: new Date().toLocaleString(),
+    section,
+    remark,
     dataUrl
   });
 }
@@ -6762,7 +7150,92 @@ function renderClientSowMeta() {
   const bits = [sow.name];
   if (sow.size) bits.push(formatFileSize(sow.size));
   if (sow.uploadedAt) bits.push(`uploaded ${sow.uploadedAt}`);
+  if (sow.section) bits.push(getPageLabel(sow.section));
+  if (sow.remark) bits.push(`remark: ${sow.remark}`);
   clientSowMeta.textContent = `SoW: ${bits.join(" | ")}`;
+}
+
+function normalizeChatFaqText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildChatFaqListMessage() {
+  const lines = ["FAQ Library (type question, /faq 1, /faq 2, etc.):"];
+  CHAT_FAQ_LIBRARY.forEach((item, index) => {
+    lines.push(`${index + 1}. ${item.question}`);
+  });
+  lines.push("Tip: You can also ask naturally, for example: how do I upload SoW?");
+  return lines.join("\n");
+}
+
+function matchChatFaqQuestion(messageText) {
+  const normalized = normalizeChatFaqText(messageText);
+  if (!normalized) return null;
+  const numberMatch = normalized.match(/^\/?faq\s*(\d+)$/);
+  if (numberMatch) {
+    const idx = Number(numberMatch[1]) - 1;
+    return Number.isInteger(idx) && idx >= 0 && idx < CHAT_FAQ_LIBRARY.length ? CHAT_FAQ_LIBRARY[idx] : null;
+  }
+
+  let best = null;
+  let bestScore = 0;
+  CHAT_FAQ_LIBRARY.forEach(item => {
+    let score = 0;
+    const questionText = normalizeChatFaqText(item.question);
+    if (normalized === questionText) score += 12;
+    if (normalized.includes(questionText)) score += 8;
+    (item.keywords || []).forEach(keyword => {
+      const keyText = normalizeChatFaqText(keyword);
+      if (!keyText) return;
+      if (normalized.includes(keyText)) score += 3;
+    });
+    if (score > bestScore) {
+      bestScore = score;
+      best = item;
+    }
+  });
+  return bestScore > 0 ? best : null;
+}
+
+function getChatFaqResponse(messageText) {
+  const normalized = normalizeChatFaqText(messageText);
+  if (!normalized) return null;
+  const faqListAliases = new Set(["faq", "/faq", "help", "/help", "faq list", "show faq", "show faqs", "help menu"]);
+  if (faqListAliases.has(normalized)) return buildChatFaqListMessage();
+
+  const faqItem = matchChatFaqQuestion(normalized);
+  if (faqItem) {
+    return `${faqItem.question}\n${faqItem.answer}\nNeed more topics? Type /faq`;
+  }
+
+  return null;
+}
+
+function pushChatBotMessage(client, text) {
+  if (!client) return;
+  const value = String(text || "").trim();
+  if (!value) return;
+  if (!Array.isArray(client.chatMessages)) client.chatMessages = [];
+  client.chatMessages.push({
+    id: `m_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    text: value,
+    senderRole: "system",
+    senderName: "FAQ Bot",
+    createdAt: new Date().toISOString(),
+    attachment: null
+  });
+}
+
+function sendChatFaqLibraryMessage() {
+  const active = getActiveClient();
+  if (!active) return;
+  pushChatBotMessage(active, buildChatFaqListMessage());
+  saveClients();
+  if (isChatPopupOpen) markChatRead(active);
+  renderChatPanel();
 }
 
 function clearPendingChatAttachment() {
@@ -6823,7 +7296,7 @@ function getUnreadChatCount(client) {
     ? new Date(client.chatLastRead[currentRole]).getTime()
     : 0;
   return messages.filter(message => {
-    if (!message || message.senderRole === currentRole) return false;
+    if (!message || message.senderRole === currentRole || message.senderRole === "system") return false;
     const created = new Date(message.createdAt || 0).getTime();
     return Number.isFinite(created) && created > markerValue;
   }).length;
@@ -6861,6 +7334,7 @@ function renderChatPanel() {
     if (chatMessageInput) chatMessageInput.disabled = true;
     if (sendChatBtn) sendChatBtn.disabled = true;
     if (chatAttachBtn) chatAttachBtn.disabled = true;
+    if (chatFaqBtn) chatFaqBtn.disabled = true;
     if (chatLauncherBtn) chatLauncherBtn.disabled = true;
     if (chatUnreadCount) {
       chatUnreadCount.textContent = "0";
@@ -6877,10 +7351,11 @@ function renderChatPanel() {
   if (chatCount) chatCount.textContent = String(messages.length);
   if (chatMessageInput) {
     chatMessageInput.disabled = false;
-    chatMessageInput.placeholder = `Message as ${displayName}`;
+    chatMessageInput.placeholder = `Message as ${displayName} (type /faq for help)`;
   }
   if (sendChatBtn) sendChatBtn.disabled = false;
   if (chatAttachBtn) chatAttachBtn.disabled = false;
+  if (chatFaqBtn) chatFaqBtn.disabled = false;
   if (chatLauncherBtn) chatLauncherBtn.disabled = false;
 
   const unread = getUnreadChatCount(active);
@@ -6892,13 +7367,14 @@ function renderChatPanel() {
 
   chatList.innerHTML = "";
   if (!messages.length) {
-    chatList.innerHTML = '<p class="empty-state">No messages yet. Start the conversation.</p>';
+    chatList.innerHTML = '<p class="empty-state">No messages yet. Start the conversation or type /faq for help.</p>';
     return;
   }
 
   messages.forEach(message => {
     const item = document.createElement("article");
-    const mine = message.senderRole === currentRole;
+    const isBot = message.senderRole === "system";
+    const mine = !isBot && message.senderRole === currentRole;
     const attachment = message.attachment || null;
     const attachmentMarkup = attachment
       ? `
@@ -6908,10 +7384,13 @@ function renderChatPanel() {
       </a>
       `
       : "";
-    item.className = `chat-item ${mine ? "mine" : "other"}`;
+    const senderLabel = mine
+      ? "You"
+      : (isBot ? "FAQ Bot" : (message.senderName || (message.senderRole === "admin" ? "Admin" : "Client")));
+    item.className = `chat-item ${mine ? "mine" : "other"}${isBot ? " bot" : ""}`;
     item.innerHTML = `
       <div class="chat-meta">
-        <strong>${escapeHtml(mine ? "You" : (message.senderName || (message.senderRole === "admin" ? "Admin" : "Client")))}</strong>
+        <strong>${escapeHtml(senderLabel)}</strong>
         <span>${formatChatTimestamp(message.createdAt)}</span>
       </div>
       ${message.text ? `<p>${escapeHtml(message.text || "")}</p>` : ""}
@@ -6955,6 +7434,8 @@ async function sendChatMessage() {
     createdAt: new Date().toISOString(),
     attachment: attachmentPayload
   });
+  const faqReply = attachmentPayload ? null : getChatFaqResponse(text);
+  if (faqReply) pushChatBotMessage(active, faqReply);
 
   const chatAuditLabelParts = [];
   if (text) chatAuditLabelParts.push(text.length > 48 ? `${text.slice(0, 48)}...` : text);
@@ -6969,6 +7450,7 @@ async function sendChatMessage() {
   chatMessageInput.value = "";
   clearPendingChatAttachment();
   saveClients();
+  if (isChatPopupOpen) markChatRead(active);
   renderChatPanel();
 }
 
@@ -7493,14 +7975,24 @@ function renderFitmentOfferSwitcher() {
 function renderAdminSowPanel() {
   const active = getActiveClient();
   const canView = Boolean(active) && isAdmin();
+  const checkToken = ++adminSowBinaryCheckToken;
   if (adminSowManageBtn) adminSowManageBtn.classList.toggle("hidden", !canView);
-  if (!adminSowPanelMeta || !adminSowViewBtn || !adminSowDownloadBtn || !adminSowUploadBtn || !adminSowRemoveBtn) return;
+  if (!adminSowPanelMeta || !adminSowDownloadBtn || !adminSowUploadBtn || !adminSowRemoveBtn) return;
+  renderAdminSowHistory(canView ? active : null);
   if (!canView) {
     adminSowPanelMeta.textContent = "No SoW uploaded.";
-    adminSowViewBtn.disabled = true;
     adminSowDownloadBtn.disabled = true;
     adminSowRemoveBtn.disabled = true;
     adminSowUploadBtn.disabled = true;
+    if (adminSowSubmitBtn) adminSowSubmitBtn.disabled = true;
+    if (adminSowSectionSelect) {
+      adminSowSectionSelect.value = "";
+      adminSowSectionSelect.disabled = true;
+    }
+    if (adminSowRemarkInput) {
+      adminSowRemarkInput.value = "";
+      adminSowRemarkInput.disabled = true;
+    }
     if (adminSowModal && adminSowModal.style.display === "block") closeAdminSowModal();
     return;
   }
@@ -7508,44 +8000,71 @@ function renderAdminSowPanel() {
   const sow = normalizeClientSowDocument(active.sowDocument);
   if (!sow) {
     adminSowPanelMeta.textContent = "No SoW uploaded.";
-    adminSowViewBtn.disabled = true;
     adminSowDownloadBtn.disabled = true;
     adminSowRemoveBtn.disabled = true;
     adminSowUploadBtn.disabled = !isAdmin();
+    if (adminSowSubmitBtn) adminSowSubmitBtn.disabled = true;
+    if (adminSowSectionSelect) {
+      adminSowSectionSelect.value = "";
+      adminSowSectionSelect.disabled = false;
+    }
+    if (adminSowRemarkInput) {
+      adminSowRemarkInput.value = "";
+      adminSowRemarkInput.disabled = false;
+    }
     return;
   }
 
   const details = [sow.name];
   if (sow.size) details.push(formatFileSize(sow.size));
   if (sow.uploadedAt) details.push(`uploaded ${sow.uploadedAt}`);
-  if (!sow.dataUrl) details.push("re-upload required to enable view/download");
+  if (sow.section) details.push(getPageLabel(sow.section));
+  if (sow.remark) details.push(`remark: ${sow.remark}`);
   adminSowPanelMeta.textContent = `SoW: ${details.join(" | ")}`;
-
-  const hasBinary = Boolean(sow.dataUrl);
-  adminSowViewBtn.disabled = !hasBinary;
-  adminSowDownloadBtn.disabled = !hasBinary;
+  if (adminSowSectionSelect) {
+    const section = String(sow.section || "").trim();
+    const hasOption = Array.from(adminSowSectionSelect.options).some(option => option.value === section);
+    adminSowSectionSelect.value = hasOption ? section : "";
+    adminSowSectionSelect.disabled = false;
+  }
+  if (adminSowRemarkInput) {
+    adminSowRemarkInput.value = sow.remark || "";
+    adminSowRemarkInput.disabled = false;
+  }
+  const inlineBinary = Boolean(sow.dataUrl);
+  adminSowDownloadBtn.disabled = !inlineBinary;
   adminSowRemoveBtn.disabled = false;
   adminSowUploadBtn.disabled = false;
+  if (adminSowSubmitBtn) adminSowSubmitBtn.disabled = false;
+  if (inlineBinary) return;
+  hasSowBinaryForClient(active.id).then(hasBinary => {
+    if (checkToken !== adminSowBinaryCheckToken) return;
+    const latest = getActiveClient();
+    if (!latest || latest.id !== active.id || !isAdmin()) return;
+    adminSowDownloadBtn.disabled = !hasBinary;
+    const refreshed = [sow.name];
+    if (sow.size) refreshed.push(formatFileSize(sow.size));
+    if (sow.uploadedAt) refreshed.push(`uploaded ${sow.uploadedAt}`);
+    if (sow.section) refreshed.push(getPageLabel(sow.section));
+    if (sow.remark) refreshed.push(`remark: ${sow.remark}`);
+    if (!hasBinary) refreshed.push("re-upload required to enable view/download");
+    adminSowPanelMeta.textContent = `SoW: ${refreshed.join(" | ")}`;
+  });
 }
 
 function openAdminSowModal() {
   if (!isAdmin() || !adminSowModal) return;
   const active = getActiveClient();
   if (!active) return;
+  if (adminSowHistoryDetails) adminSowHistoryDetails.open = false;
   renderAdminSowPanel();
   adminSowModal.style.display = "block";
 }
 
 function closeAdminSowModal() {
   if (adminSowModal) adminSowModal.style.display = "none";
+  if (adminSowHistoryDetails) adminSowHistoryDetails.open = false;
   if (adminSowFileInput) adminSowFileInput.value = "";
-}
-
-function openSowDataUrl(dataUrl) {
-  const value = String(dataUrl || "").trim();
-  if (!value) return false;
-  const ref = window.open(value, "_blank", "noopener,noreferrer");
-  return Boolean(ref);
 }
 
 function downloadSowDataUrl(dataUrl, fileName) {
@@ -7560,31 +8079,17 @@ function downloadSowDataUrl(dataUrl, fileName) {
   return true;
 }
 
-function viewActiveClientSow() {
+async function downloadActiveClientSow() {
   if (!isAdmin()) return;
   const active = getActiveClient();
   if (!active) return;
+  const dataUrl = await resolveSowDataUrlForClient(active);
   const sow = normalizeClientSowDocument(active.sowDocument);
-  if (!sow || !sow.dataUrl) {
-    window.alert("SoW file is not available to view. Please upload/re-upload the document.");
-    return;
-  }
-  const opened = openSowDataUrl(sow.dataUrl);
-  if (!opened) {
-    window.alert("Unable to open SoW in a new tab. Please allow popups and try again.");
-  }
-}
-
-function downloadActiveClientSow() {
-  if (!isAdmin()) return;
-  const active = getActiveClient();
-  if (!active) return;
-  const sow = normalizeClientSowDocument(active.sowDocument);
-  if (!sow || !sow.dataUrl) {
+  if (!sow || !dataUrl) {
     window.alert("SoW file is not available to download. Please upload/re-upload the document.");
     return;
   }
-  downloadSowDataUrl(sow.dataUrl, sow.name || "sow_document");
+  downloadSowDataUrl(dataUrl, sow.name || "sow_document");
 }
 
 async function handleAdminSowUpload() {
@@ -7593,36 +8098,101 @@ async function handleAdminSowUpload() {
   if (!active) return;
   const file = adminSowFileInput && adminSowFileInput.files ? adminSowFileInput.files[0] : null;
   if (!file) return;
-  const sowDoc = await createClientSowDocumentFromFile(file);
+  const section = adminSowSectionSelect ? String(adminSowSectionSelect.value || "").trim() : "";
+  const remark = adminSowRemarkInput ? String(adminSowRemarkInput.value || "").trim() : "";
+  const sowDoc = await createClientSowDocumentFromFile(file, { section, remark });
   if (!sowDoc) {
     if (adminSowFileInput) adminSowFileInput.value = "";
     renderAdminSowPanel();
     return;
   }
-  const previousSow = normalizeClientSowDocument(active.sowDocument);
-  active.sowDocument = sowDoc;
+  const storedSow = await persistSowDocumentForClient(active.id, sowDoc);
+  if (!storedSow) {
+    if (adminSowFileInput) adminSowFileInput.value = "";
+    renderAdminSowPanel();
+    return;
+  }
+  active.sowDocument = storedSow;
+  addSowHistoryEntry(active, storedSow);
   addAuditLog(active, "SoW Updated", sowDoc.name || "SoW Document", {
     eventType: "field",
     actorRole: "admin",
     actorName: "Admin",
     pageKey: getActivePageKey()
   });
-  const saved = saveClients({ showError: true, action: "save SoW changes" });
-  if (!saved) {
-    active.sowDocument = previousSow;
-    refreshClientsFromStorage();
-    renderAdminSowPanel();
-    return;
-  }
+  saveClients();
   if (editingClientId && active.id === editingClientId) {
-    pendingClientSowDocument = normalizeClientSowDocument(sowDoc);
+    pendingClientSowDocument = normalizeClientSowDocument(storedSow);
     renderClientSowMeta();
   }
   if (adminSowFileInput) adminSowFileInput.value = "";
   renderWorkspace();
 }
 
-function removeActiveClientSow() {
+async function submitAdminSowDetails() {
+  if (!isAdmin()) return;
+  const active = getActiveClient();
+  if (!active) return;
+  const sow = normalizeClientSowDocument(active.sowDocument);
+  if (!sow) {
+    window.alert("Upload SoW first, then submit section and remark.");
+    return;
+  }
+
+  const section = adminSowSectionSelect ? String(adminSowSectionSelect.value || "").trim() : "";
+  const remark = adminSowRemarkInput ? String(adminSowRemarkInput.value || "").trim() : "";
+  const updatedSow = normalizeClientSowDocument({
+    ...sow,
+    section,
+    remark,
+    dataUrl: sow.dataUrl
+  });
+  if (!updatedSow) return;
+
+  const unchanged = String(sow.section || "") === section && String(sow.remark || "") === remark;
+  if (unchanged) {
+    renderAdminSowPanel();
+    return;
+  }
+
+  active.sowDocument = updatedSow;
+  active.sowVersionHistory = normalizeClientSowHistory(active.sowVersionHistory);
+  if (active.sowVersionHistory.length) {
+    const latest = active.sowVersionHistory[0];
+    if (latest && latest.name === sow.name && latest.uploadedAt === sow.uploadedAt) {
+      const patched = normalizeClientSowHistoryEntry({
+        ...latest,
+        section: updatedSow.section,
+        remark: updatedSow.remark
+      });
+      if (patched) active.sowVersionHistory[0] = patched;
+    }
+  }
+
+  const dataUrl = await resolveSowDataUrlForClient(active);
+  if (dataUrl) {
+    await putSowBinaryForClient(active.id, {
+      ...updatedSow,
+      dataUrl
+    });
+  }
+
+  const descriptor = [
+    updatedSow.name,
+    updatedSow.section ? getPageLabel(updatedSow.section) : "",
+    updatedSow.remark ? updatedSow.remark : ""
+  ].filter(Boolean).join(" | ");
+  addAuditLog(active, "SoW Metadata Updated", descriptor || "SoW Metadata", {
+    eventType: "field",
+    actorRole: "admin",
+    actorName: "Admin",
+    pageKey: getActivePageKey()
+  });
+  saveClients();
+  renderAdminSowPanel();
+}
+
+async function removeActiveClientSow() {
   if (!isAdmin()) return;
   const active = getActiveClient();
   if (!active) return;
@@ -7637,13 +8207,8 @@ function removeActiveClientSow() {
     actorName: "Admin",
     pageKey: getActivePageKey()
   });
-  const saved = saveClients({ showError: true, action: "save SoW changes" });
-  if (!saved) {
-    active.sowDocument = sow;
-    refreshClientsFromStorage();
-    renderAdminSowPanel();
-    return;
-  }
+  await deleteSowBinaryForClient(active.id);
+  saveClients();
   if (editingClientId && active.id === editingClientId) {
     pendingClientSowDocument = null;
     renderClientSowMeta();
@@ -7817,6 +8382,7 @@ function openClientModal() {
   if (clientModalName) clientModalName.value = "";
   if (clientUserEmail) clientUserEmail.value = "";
   if (clientUserPassword) clientUserPassword.value = "";
+  if (clientProduct) clientProduct.value = "Standard";
   if (clientSowInput) clientSowInput.value = "";
   renderClientSowMeta();
   if (integrationCount) integrationCount.value = "1";
@@ -7833,6 +8399,7 @@ function openEditClientModal(client) {
   if (clientModalName) clientModalName.value = client.name || "";
   if (clientUserEmail) clientUserEmail.value = client.loginEmail || "";
   if (clientUserPassword) clientUserPassword.value = "";
+  if (clientProduct) clientProduct.value = normalizeClientProduct(client.product);
   if (clientSowInput) clientSowInput.value = "";
   renderClientSowMeta();
   const integrations = Array.isArray(client.integrations) && client.integrations.length ? client.integrations : [{ type: integrationOptions[0], vendor: "" }];
@@ -7844,6 +8411,7 @@ function closeClientModal() {
   if (clientModal) clientModal.style.display = "none";
   editingClientId = null;
   pendingClientSowDocument = null;
+  if (clientProduct) clientProduct.value = "Standard";
   if (clientSowInput) clientSowInput.value = "";
   renderClientSowMeta();
   if (clientModalTitle) clientModalTitle.textContent = "Add Client";
@@ -8483,10 +9051,19 @@ function openClientDetailModal(client) {
   status.innerHTML = `<strong>Access</strong> - ${client.accessDisabled ? "Disabled" : "Enabled"}`;
   clientDetailContent.appendChild(status);
 
+  const product = document.createElement("div");
+  product.className = "integration-item";
+  product.innerHTML = `<strong>Product</strong> - ${escapeHtml(normalizeClientProduct(client.product))}`;
+  clientDetailContent.appendChild(product);
+
   const sow = normalizeClientSowDocument(client.sowDocument);
-  const sowInfo = sow
-    ? `${escapeHtml(sow.name)}${sow.size ? ` (${escapeHtml(formatFileSize(sow.size))})` : ""}`
-    : "Not Uploaded";
+  let sowInfo = "Not Uploaded";
+  if (sow) {
+    const parts = [`${escapeHtml(sow.name)}${sow.size ? ` (${escapeHtml(formatFileSize(sow.size))})` : ""}`];
+    if (sow.section) parts.push(escapeHtml(getPageLabel(sow.section)));
+    if (sow.remark) parts.push(`remark: ${escapeHtml(sow.remark)}`);
+    sowInfo = parts.join(" | ");
+  }
   const sowItem = document.createElement("div");
   sowItem.className = "integration-item";
   sowItem.innerHTML = `<strong>SoW</strong> - ${sowInfo}`;
@@ -8558,6 +9135,7 @@ function confirmClientRemovalWithAuth() {
 
   const removedId = clients[index].id;
   clients.splice(index, 1);
+  deleteSowBinaryForClient(removedId);
   if (activeClientId === removedId) {
     activeClientId = clients[0] ? clients[0].id : null;
   }
@@ -8781,9 +9359,15 @@ if (adminSowUploadBtn) {
   });
 }
 if (adminSowFileInput) adminSowFileInput.addEventListener("change", handleAdminSowUpload);
-if (adminSowViewBtn) adminSowViewBtn.addEventListener("click", viewActiveClientSow);
 if (adminSowDownloadBtn) adminSowDownloadBtn.addEventListener("click", downloadActiveClientSow);
+if (adminSowSubmitBtn) adminSowSubmitBtn.addEventListener("click", submitAdminSowDetails);
 if (adminSowRemoveBtn) adminSowRemoveBtn.addEventListener("click", removeActiveClientSow);
+if (adminSowHistorySort) {
+  adminSowHistorySort.addEventListener("change", () => {
+    const active = getActiveClient();
+    renderAdminSowHistory(active);
+  });
+}
 if (openClientUsersBtn) openClientUsersBtn.addEventListener("click", openClientUsersModal);
 if (closeClientUsersModalBtn) closeClientUsersModalBtn.addEventListener("click", closeClientUsersModal);
 if (openClientUserFormBtn) openClientUserFormBtn.addEventListener("click", openClientUserFormInline);
@@ -8949,6 +9533,7 @@ if (saveClientBtn) {
     const name = clientModalName ? clientModalName.value.trim() : "";
     const loginEmailValue = clientUserEmail ? clientUserEmail.value.trim().toLowerCase() : "";
     const loginPasswordValue = clientUserPassword ? clientUserPassword.value.trim() : "";
+    const productValue = normalizeClientProduct(clientProduct ? clientProduct.value : "Standard");
     if (!name || !loginEmailValue) {
       window.alert("Client name and login user ID are required.");
       return;
@@ -8976,11 +9561,17 @@ if (saveClientBtn) {
     if (selectedSowFile && !sowDocument) return;
 
     if (editingClient) {
+      const resolvedSow = selectedSowFile
+        ? await persistSowDocumentForClient(editingClient.id, sowDocument)
+        : sowDocument;
+      if (selectedSowFile && !resolvedSow) return;
       const oldIdentity = `${editingClient.name || ""} (${editingClient.loginEmail || ""})`;
       editingClient.name = name;
       editingClient.loginEmail = loginEmailValue;
+      editingClient.product = productValue;
       editingClient.integrations = integrations;
-      editingClient.sowDocument = sowDocument;
+      editingClient.sowDocument = resolvedSow;
+      if (selectedSowFile && resolvedSow) addSowHistoryEntry(editingClient, resolvedSow);
       if (loginPasswordValue) {
         editingClient.loginPassword = loginPasswordValue;
         editingClient.forcePasswordReset = false;
@@ -8999,8 +9590,15 @@ if (saveClientBtn) {
         loginEmailValue,
         loginPasswordValue,
         isManager() ? currentUserEmail : AUTH.admin.email,
-        sowDocument
+        null,
+        productValue
       );
+      const resolvedSow = selectedSowFile
+        ? await persistSowDocumentForClient(client.id, sowDocument)
+        : sowDocument;
+      if (selectedSowFile && !resolvedSow) return;
+      client.sowDocument = resolvedSow;
+      if (selectedSowFile && resolvedSow) addSowHistoryEntry(client, resolvedSow);
       clients.push(client);
       addAuditLog(client, "Client Added", `${name} (${loginEmailValue})`, {
         eventType: "field",
@@ -9011,11 +9609,7 @@ if (saveClientBtn) {
       activeClientId = client.id;
     }
     persistSession();
-    const saved = saveClients({ showError: true, action: "save client details" });
-    if (!saved) {
-      refreshClientsFromStorage();
-      return;
-    }
+    saveClients();
     closeClientModal();
     renderAll();
   });
@@ -9256,6 +9850,11 @@ if (chatAttachBtn) {
     chatFileInput.click();
   });
 }
+if (chatFaqBtn) {
+  chatFaqBtn.addEventListener("click", () => {
+    sendChatFaqLibraryMessage();
+  });
+}
 if (chatFileInput) {
   chatFileInput.addEventListener("change", () => {
     handleChatFileSelected();
@@ -9427,14 +10026,16 @@ function addDocumentForStage(stageKey) {
   const bucket = ensureDocumentCollectionGeoBucket(active, activeGeo);
   const isPre = stageKey === "pre";
   const input = isPre ? preOfferDocInput : postOfferDocInput;
+  const remarkInput = isPre ? preOfferDocRemarkInput : postOfferDocRemarkInput;
   const value = String(input ? input.value : "").trim();
+  const remark = String(remarkInput ? remarkInput.value : "").trim();
   if (!value) return;
   const list = isPre ? bucket.preOffer : bucket.postOffer;
-  if (list.some(item => item.toLowerCase() === value.toLowerCase())) {
+  if (list.some(item => String(item?.name || "").toLowerCase() === value.toLowerCase())) {
     window.alert("Document already exists in this stage.");
     return;
   }
-  list.push(value);
+  list.push({ name: value, remark });
   addAuditLog(active, "Document Added", `${activeGeo} | ${isPre ? "Pre-Offer" : "Post-Offer"} - ${value}`, {
     eventType: "field",
     actorRole: "client",
@@ -9442,20 +10043,9 @@ function addDocumentForStage(stageKey) {
     pageKey: "document_collection"
   });
   if (input) input.value = "";
+  if (remarkInput) remarkInput.value = "";
   saveClients();
   renderDocumentCollection();
-}
-
-function promptAndAddDocumentForStage(stageKey) {
-  if (!canEditWorkspace()) return;
-  const isPre = stageKey === "pre";
-  const input = isPre ? preOfferDocInput : postOfferDocInput;
-  const seed = String(input ? input.value : "").trim();
-  const label = isPre ? "Pre-Offer" : "Post-Offer";
-  const value = window.prompt(`Enter document name for ${label}:`, seed);
-  if (value === null) return;
-  if (input) input.value = value.trim();
-  addDocumentForStage(stageKey);
 }
 
 function removeDocumentForStage(stageKey, index) {
@@ -9472,8 +10062,9 @@ function removeDocumentForStage(stageKey, index) {
   const idx = Number(index);
   if (!Number.isInteger(idx) || idx < 0 || idx >= list.length) return;
   const removed = list[idx];
+  const removedName = String(removed?.name || removed || "").trim();
   list.splice(idx, 1);
-  addAuditLog(active, "Document Removed", `${activeGeo} | ${isPre ? "Pre-Offer" : "Post-Offer"} - ${removed}`, {
+  addAuditLog(active, "Document Removed", `${activeGeo} | ${isPre ? "Pre-Offer" : "Post-Offer"} - ${removedName}`, {
     eventType: "field",
     actorRole: "client",
     actorName: active.name || "Client",
@@ -9689,7 +10280,7 @@ if (dataMigrationTemplateUploadBtn && dataMigrationTemplateInput) {
 }
 
 if (addPreOfferDocBtn) {
-  addPreOfferDocBtn.addEventListener("click", () => promptAndAddDocumentForStage("pre"));
+  addPreOfferDocBtn.addEventListener("click", () => addDocumentForStage("pre"));
 }
 
 if (preOfferDocInput) {
@@ -9700,12 +10291,28 @@ if (preOfferDocInput) {
   });
 }
 
+if (preOfferDocRemarkInput) {
+  preOfferDocRemarkInput.addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    addDocumentForStage("pre");
+  });
+}
+
 if (addPostOfferDocBtn) {
-  addPostOfferDocBtn.addEventListener("click", () => promptAndAddDocumentForStage("post"));
+  addPostOfferDocBtn.addEventListener("click", () => addDocumentForStage("post"));
 }
 
 if (postOfferDocInput) {
   postOfferDocInput.addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    addDocumentForStage("post");
+  });
+}
+
+if (postOfferDocRemarkInput) {
+  postOfferDocRemarkInput.addEventListener("keydown", event => {
     if (event.key !== "Enter") return;
     event.preventDefault();
     addDocumentForStage("post");
@@ -10446,10 +11053,10 @@ document.addEventListener("DOMContentLoaded", () => {
   clients = loadedClients || [];
   memoryClientsSnapshot = serializeClients(clients);
   lastSyncedSignature = getClientsSignature(clients);
+  migrateLegacySowDocumentsToBinaryStore();
   activeClientId = clients[0] ? clients[0].id : null;
   applyRoleUI();
-  if (appRoot) appRoot.classList.add("hidden");
-  if (loginRoot) loginRoot.classList.remove("hidden");
+  setRootVisibility(false);
   renderAll();
   renderIntegrationRows(1);
   updateTypeModalFields();
