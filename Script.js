@@ -391,9 +391,7 @@ const DEFAULT_API_BASE_URL = "http://127.0.0.1:4000/api";
 const API_BASE_URL = String(window.ZWAYAM_API_BASE || window.ZWAYAM_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
 const API_STRICT_MODE = (() => {
   if (typeof window.ZWAYAM_STRICT_API === "boolean") return window.ZWAYAM_STRICT_API;
-  const host = String(window.location && window.location.hostname ? window.location.hostname : "").toLowerCase();
-  const isLocalHost = host === "localhost" || host === "127.0.0.1";
-  return !isLocalHost;
+  return false;
 })();
 const API_SYNC_DEBOUNCE_MS = 350;
 const CURRENT_DATA_SCHEMA_VERSION = 1;
