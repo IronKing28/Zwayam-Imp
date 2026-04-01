@@ -618,37 +618,39 @@
   </main>
 
   <div id="clientModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="clientModalTitle">
-    <div class="modal-content">
+    <div class="modal-content client-modal-content">
       <div class="panel-head modal-head">
         <h3 id="clientModalTitle">Add Client</h3>
         <button id="closeClientModalBtn" class="btn btn-ghost" type="button">Close</button>
       </div>
 
-      <div class="modal-grid">
-        <label for="clientModalName">Client Name</label>
-        <input id="clientModalName" type="text" placeholder="Enter client name">
+      <div class="client-modal-body">
+        <div class="modal-grid">
+          <label for="clientModalName">Client Name</label>
+          <input id="clientModalName" type="text" placeholder="Enter client name">
 
-        <label for="clientUserEmail">Client Login User ID</label>
-        <input id="clientUserEmail" type="text" placeholder="Enter client login user ID">
+          <label for="clientUserEmail">Client Login User ID</label>
+          <input id="clientUserEmail" type="text" placeholder="Enter client login user ID">
 
-        <label for="clientUserPassword">Client Login Password (Optional)</label>
-        <input id="clientUserPassword" type="password" placeholder="Optional temporary password">
+          <label for="clientUserPassword">Client Login Password (Optional)</label>
+          <input id="clientUserPassword" type="password" placeholder="Optional temporary password">
 
-        <label for="clientProduct">Product</label>
-        <select id="clientProduct">
-          <option value="Standard" selected>Standard</option>
-          <option value="Premium">Premium</option>
-        </select>
+          <label for="clientProduct">Product</label>
+          <select id="clientProduct">
+            <option value="Standard" selected>Standard</option>
+            <option value="Premium">Premium</option>
+          </select>
 
-        <label for="clientSowInput">SoW Document</label>
-        <input id="clientSowInput" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+          <label for="clientSowInput">SoW Document</label>
+          <input id="clientSowInput" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
 
-        <label for="integrationCount">Number of Integrations</label>
-        <input id="integrationCount" type="number" min="1" max="10" value="1">
+          <label for="integrationCount">Number of Integrations</label>
+          <input id="integrationCount" type="number" min="1" max="10" value="1">
+        </div>
+        <p id="clientSowMeta" class="helper">No SoW uploaded.</p>
+
+        <div id="integrationRows" class="integration-rows"></div>
       </div>
-      <p id="clientSowMeta" class="helper">No SoW uploaded.</p>
-
-      <div id="integrationRows" class="integration-rows"></div>
 
       <div class="modal-actions">
         <button id="saveClientBtn" class="btn btn-primary" type="button">Save Client</button>
@@ -866,24 +868,26 @@
     </div>
   </div>
 
-  <div id="previewModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle">
-    <div class="modal-content">
+  <div id="previewModal" class="modal preview-modal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle">
+    <div class="modal-content preview-modal-content">
       <div class="panel-head modal-head">
         <h3 id="previewModalTitle">Form Preview</h3>
         <button id="closePreviewModalBtn" class="btn btn-ghost" type="button">Close</button>
       </div>
-      <div id="previewRequisitionFilterBar" class="preview-filter-bar hidden">
-        <label for="previewDeptSelect">Department</label>
-        <select id="previewDeptSelect"></select>
-        <label for="previewSubDeptSelect">Sub Department</label>
-        <select id="previewSubDeptSelect"></select>
-        <label for="previewGeoSelect">Geo</label>
-        <select id="previewGeoSelect"></select>
+      <div class="preview-modal-body">
+        <div id="previewRequisitionFilterBar" class="preview-filter-bar hidden">
+          <label for="previewDeptSelect">Department</label>
+          <select id="previewDeptSelect"></select>
+          <label for="previewSubDeptSelect">Sub Department</label>
+          <select id="previewSubDeptSelect"></select>
+          <label for="previewGeoSelect">Geo</label>
+          <select id="previewGeoSelect"></select>
+        </div>
+        <p id="previewContextHint" class="helper hidden"></p>
+        <form id="previewForm" class="dynamic-form">
+          <p id="previewFormEmpty" class="empty-state">No fields selected for preview.</p>
+        </form>
       </div>
-      <p id="previewContextHint" class="helper hidden"></p>
-      <form id="previewForm" class="dynamic-form">
-        <p id="previewFormEmpty" class="empty-state">No fields selected for preview.</p>
-      </form>
     </div>
   </div>
 
