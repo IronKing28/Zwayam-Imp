@@ -363,6 +363,11 @@ const USERS_STORAGE_KEY = "zwayam_form_builder_users_v1";
 const SYNC_CHANNEL_KEY = "zwayam_form_builder_sync_v1";
 const SESSION_KEY = "zwayam_form_builder_session_v1";
 const SCHEMA_VERSION_KEY = "zwayam_form_builder_schema_version_v1";
+const API_TOKEN_KEY = "zwayam_form_builder_api_token_v1";
+const API_USER_KEY = "zwayam_form_builder_api_user_v1";
+const DEFAULT_API_BASE_URL = "http://127.0.0.1:4000/api";
+const API_BASE_URL = String(window.ZWAYAM_API_BASE || window.ZWAYAM_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
+const API_SYNC_DEBOUNCE_MS = 350;
 const CURRENT_DATA_SCHEMA_VERSION = 1;
 const AUTH = {
   admin: { email: "abhijit.ghosh@zwayam.com", password: "AIGrocks@28", role: "admin" }
@@ -380,6 +385,12 @@ let memoryClientsSnapshot = [];
 let lastSyncedSignature = "";
 let syncPollTimer = null;
 let managedUsers = [];
+let apiAuthToken = "";
+let apiCurrentUser = null;
+let apiSyncTimer = null;
+let apiSyncInFlight = false;
+let apiSyncQueued = false;
+let apiPullInFlight = false;
 const syncChannel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(SYNC_CHANNEL_KEY) : null;
 
 function escapeHtml(value) {
@@ -394,6 +405,335 @@ function escapeHtml(value) {
 function normalizeClientProduct(value) {
   const selected = String(value || "").trim();
   return CLIENT_PRODUCT_OPTIONS.includes(selected) ? selected : "Standard";
+}
+
+function normalizeApiRole(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "admin" || normalized === "manager" || normalized === "client") return normalized;
+  return null;
+}
+
+function normalizeApiProduct(value) {
+  return String(value || "").trim().toUpperCase() === "PREMIUM" ? "PREMIUM" : "STANDARD";
+}
+
+function denormalizeApiProduct(value) {
+  return String(value || "").trim().toUpperCase() === "PREMIUM" ? "Premium" : "Standard";
+}
+
+function parseStoredJson(raw) {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    return null;
+  }
+}
+
+function hasApiSession() {
+  return Boolean(apiAuthToken);
+}
+
+function setApiSession(token, user) {
+  apiAuthToken = String(token || "");
+  apiCurrentUser = user && typeof user === "object" ? { ...user } : null;
+
+  try {
+    if (apiAuthToken) {
+      localStorage.setItem(API_TOKEN_KEY, apiAuthToken);
+    } else {
+      localStorage.removeItem(API_TOKEN_KEY);
+    }
+
+    if (apiCurrentUser) {
+      localStorage.setItem(API_USER_KEY, JSON.stringify(apiCurrentUser));
+    } else {
+      localStorage.removeItem(API_USER_KEY);
+    }
+  } catch (error) {
+    // ignore storage failures
+  }
+}
+
+function clearApiSession() {
+  apiAuthToken = "";
+  apiCurrentUser = null;
+  apiSyncInFlight = false;
+  apiSyncQueued = false;
+  apiPullInFlight = false;
+  if (apiSyncTimer) {
+    window.clearTimeout(apiSyncTimer);
+    apiSyncTimer = null;
+  }
+  try {
+    localStorage.removeItem(API_TOKEN_KEY);
+    localStorage.removeItem(API_USER_KEY);
+  } catch (error) {
+    // ignore storage failures
+  }
+}
+
+function hydrateApiSessionFromStorage() {
+  try {
+    apiAuthToken = String(localStorage.getItem(API_TOKEN_KEY) || "");
+    const storedUser = parseStoredJson(localStorage.getItem(API_USER_KEY));
+    apiCurrentUser = storedUser && typeof storedUser === "object" ? storedUser : null;
+  } catch (error) {
+    apiAuthToken = "";
+    apiCurrentUser = null;
+  }
+}
+
+async function apiRequest(path, options = {}) {
+  const method = String(options.method || "GET").toUpperCase();
+  const requiresAuth = options.auth !== false;
+  const body = options.body;
+
+  const headers = {};
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (requiresAuth && apiAuthToken) headers.Authorization = `Bearer ${apiAuthToken}`;
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined
+    });
+  } catch (error) {
+    return { ok: false, reason: "network_error", error };
+  }
+
+  let payload = null;
+  if (response.status !== 204) {
+    try {
+      payload = await response.json();
+    } catch (error) {
+      payload = null;
+    }
+  }
+
+  if (!response.ok) {
+    if (requiresAuth && response.status === 401) clearApiSession();
+    return { ok: false, reason: "http_error", status: response.status, payload };
+  }
+
+  return { ok: true, status: response.status, payload };
+}
+
+function mapApiClientToLocalRecord(apiClient) {
+  const config = apiClient && apiClient.config && typeof apiClient.config === "object" && !Array.isArray(apiClient.config)
+    ? apiClient.config
+    : {};
+  const snapshot = config.snapshot && typeof config.snapshot === "object" && !Array.isArray(config.snapshot)
+    ? config.snapshot
+    : {};
+
+  const fallbackId = apiClient && apiClient.id ? `api_${apiClient.id}` : `c_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+  const loginEmail = String(snapshot.loginEmail || config.loginEmail || "").trim().toLowerCase();
+  const loginPassword = String(snapshot.loginPassword || config.loginPassword || "");
+  const clientUsers = Array.isArray(snapshot.clientUsers)
+    ? snapshot.clientUsers
+    : (Array.isArray(config.clientUsers) ? config.clientUsers : []);
+
+  return {
+    ...snapshot,
+    id: String(snapshot.id || fallbackId),
+    backendId: String((apiClient && apiClient.id) || snapshot.backendId || ""),
+    name: String(snapshot.name || (apiClient && apiClient.name) || "Client"),
+    ownerUserId: String(snapshot.ownerUserId || (apiClient && apiClient.owner && apiClient.owner.email) || AUTH.admin.email).trim().toLowerCase(),
+    product: normalizeClientProduct(snapshot.product || denormalizeApiProduct(apiClient && apiClient.product)),
+    accessDisabled: typeof snapshot.accessDisabled === "boolean" ? snapshot.accessDisabled : Boolean(apiClient && apiClient.accessDisabled),
+    loginEmail,
+    loginPassword,
+    forcePasswordReset: typeof snapshot.forcePasswordReset === "boolean"
+      ? snapshot.forcePasswordReset
+      : Boolean(config.forcePasswordReset),
+    clientUsers: Array.isArray(clientUsers) ? clientUsers : []
+  };
+}
+
+function buildApiClientPayload(client) {
+  const snapshot = serializeClients([client])[0] || {};
+  return {
+    name: String(client && client.name ? client.name : "").trim() || "Client",
+    product: normalizeApiProduct(client && client.product),
+    accessDisabled: Boolean(client && client.accessDisabled),
+    config: {
+      snapshot: {
+        ...snapshot,
+        backendId: String((client && client.backendId) || snapshot.backendId || "")
+      },
+      loginEmail: String(snapshot.loginEmail || "").trim().toLowerCase(),
+      loginPassword: String(snapshot.loginPassword || ""),
+      forcePasswordReset: Boolean(snapshot.forcePasswordReset),
+      clientUsers: Array.isArray(snapshot.clientUsers) ? snapshot.clientUsers : []
+    }
+  };
+}
+
+function applyClientsState(nextClients, options = {}) {
+  clients = Array.isArray(nextClients) ? nextClients : [];
+  memoryClientsSnapshot = serializeClients(clients);
+  lastSyncedSignature = JSON.stringify(memoryClientsSnapshot);
+
+  if (options.persistLocal === false) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryClientsSnapshot));
+    localStorage.setItem(SCHEMA_VERSION_KEY, String(CURRENT_DATA_SCHEMA_VERSION));
+  } catch (error) {
+    // ignore storage failures
+  }
+}
+
+async function pullClientsFromApi() {
+  if (!hasApiSession() || apiPullInFlight) {
+    return { ok: false, reason: "not_ready" };
+  }
+
+  apiPullInFlight = true;
+  try {
+    const response = await apiRequest("/clients");
+    if (!response.ok) return response;
+
+    const remoteClients = Array.isArray(response.payload) ? response.payload : [];
+    const mapped = remoteClients.map(mapApiClientToLocalRecord);
+    const nextClients = deserializeClients(mapped);
+    const nextSignature = getClientsSignature(nextClients);
+    const changed = nextSignature !== lastSyncedSignature;
+
+    if (changed) {
+      applyClientsState(nextClients);
+      migrateLegacySowDocumentsToBinaryStore();
+    }
+
+    return { ok: true, changed, clients: nextClients };
+  } finally {
+    apiPullInFlight = false;
+  }
+}
+
+function queueClientsApiSync(delayMs = API_SYNC_DEBOUNCE_MS) {
+  if (!hasApiSession()) return;
+  if (apiSyncTimer) window.clearTimeout(apiSyncTimer);
+  apiSyncTimer = window.setTimeout(() => {
+    apiSyncTimer = null;
+    void pushClientsToApi();
+  }, Math.max(0, Number(delayMs) || API_SYNC_DEBOUNCE_MS));
+}
+
+async function pushClientsToApi() {
+  if (!hasApiSession()) return;
+  if (apiSyncInFlight) {
+    apiSyncQueued = true;
+    return;
+  }
+
+  apiSyncInFlight = true;
+  try {
+    const remoteResponse = await apiRequest("/clients");
+    if (!remoteResponse.ok) return;
+
+    const remoteClients = Array.isArray(remoteResponse.payload) ? remoteResponse.payload : [];
+    const byBackendId = new Map();
+    const byLocalId = new Map();
+    const byLoginEmail = new Map();
+
+    remoteClients.forEach(remote => {
+      byBackendId.set(String(remote.id || ""), remote);
+      const mapped = mapApiClientToLocalRecord(remote);
+      if (mapped.id) byLocalId.set(String(mapped.id), remote);
+      const loginEmail = String(mapped.loginEmail || "").toLowerCase();
+      if (loginEmail) byLoginEmail.set(loginEmail, remote);
+    });
+
+    const serialized = serializeClients(clients);
+    for (let index = 0; index < clients.length; index += 1) {
+      const localClient = clients[index];
+      const snapshot = serialized[index] || {};
+      const backendId = String(localClient.backendId || snapshot.backendId || "");
+      const localId = String(localClient.id || snapshot.id || "");
+      const loginEmail = String(snapshot.loginEmail || localClient.loginEmail || "").toLowerCase();
+
+      let remote = null;
+      if (backendId && byBackendId.has(backendId)) remote = byBackendId.get(backendId);
+      if (!remote && localId && byLocalId.has(localId)) remote = byLocalId.get(localId);
+      if (!remote && loginEmail && byLoginEmail.has(loginEmail)) remote = byLoginEmail.get(loginEmail);
+
+      const payload = buildApiClientPayload(localClient);
+      if (remote) {
+        const updated = await apiRequest(`/clients/${remote.id}`, { method: "PATCH", body: payload });
+        if (updated.ok && updated.payload && updated.payload.id) {
+          localClient.backendId = String(updated.payload.id);
+        }
+        continue;
+      }
+
+      if (currentRole === "client") continue;
+      const created = await apiRequest("/clients", { method: "POST", body: payload });
+      if (created.ok && created.payload && created.payload.id) {
+        localClient.backendId = String(created.payload.id);
+      }
+    }
+
+    applyClientsState(clients);
+  } catch (error) {
+    console.warn("Unable to sync clients to backend API.", error);
+  } finally {
+    apiSyncInFlight = false;
+    if (apiSyncQueued) {
+      apiSyncQueued = false;
+      queueClientsApiSync(0);
+    }
+  }
+}
+
+async function authenticateWithApi(email, password) {
+  const response = await apiRequest("/login", {
+    method: "POST",
+    auth: false,
+    body: { email, password }
+  });
+
+  if (!response.ok) {
+    if (response.reason === "network_error") return { ok: false, reason: "api_unreachable" };
+    if (response.status === 401) return { ok: false, reason: "invalid_credentials" };
+    return { ok: false, reason: "api_error" };
+  }
+
+  const token = response.payload && response.payload.token ? String(response.payload.token) : "";
+  const user = response.payload && response.payload.user && typeof response.payload.user === "object"
+    ? response.payload.user
+    : null;
+  const role = normalizeApiRole(user && user.role);
+
+  if (!token || !user || !role) {
+    return { ok: false, reason: "api_error" };
+  }
+
+  setApiSession(token, user);
+  const pullResult = await pullClientsFromApi();
+
+  const backendClientId = user.clientId ? String(user.clientId) : null;
+  let clientId = null;
+  if (backendClientId) {
+    const matched = clients.find(
+      client => String(client.backendId || "") === backendClientId || String(client.id || "") === backendClientId
+    );
+    clientId = matched ? matched.id : null;
+  }
+
+  return {
+    ok: true,
+    auth: {
+      role,
+      clientId,
+      backendClientId,
+      userEmail: String(user.email || email || "").trim().toLowerCase(),
+      reason: user.requiresPasswordReset ? "reset_required" : null
+    },
+    clientsPulled: Boolean(pullResult.ok)
+  };
 }
 
 const loginRoot = document.getElementById("loginRoot");
@@ -2305,6 +2645,7 @@ function saveClients() {
   } catch (error) {
     // ignore storage failures
   }
+  queueClientsApiSync();
   if (syncChannel) {
     try {
       syncChannel.postMessage({ type: "clients_updated", timestamp: Date.now() });
@@ -2581,12 +2922,30 @@ function refreshClientsFromStorage() {
   return true;
 }
 
+async function refreshClientsFromApi() {
+  const response = await pullClientsFromApi();
+  if (!response.ok || !response.changed) return false;
+
+  const visibleClients = getVisibleClientsForCurrentRole();
+  if (activeClientId && !visibleClients.some(client => client.id === activeClientId)) {
+    activeClientId = visibleClients[0] ? visibleClients[0].id : null;
+  }
+  renderAll();
+  enforceClientAccess();
+  enforceManagerAccess();
+  return true;
+}
+
 function startSyncPolling() {
   if (syncPollTimer) return;
   syncPollTimer = window.setInterval(() => {
     if (!currentRole) return;
+    if (hasApiSession()) {
+      void refreshClientsFromApi();
+      return;
+    }
     refreshClientsFromStorage();
-  }, 1000);
+  }, hasApiSession() ? 3000 : 1000);
 }
 
 function stopSyncPolling() {
@@ -2598,6 +2957,9 @@ function stopSyncPolling() {
 function login(role, options = {}) {
   currentRole = role;
   currentUserEmail = String(options.userEmail || (role === "admin" ? AUTH.admin.email : "")).toLowerCase();
+  if (role === "client" && options.clientId) {
+    activeClientId = options.clientId;
+  }
   activeClientPage = "requisition";
   activeAdminPage = "requisition";
   activeFitmentView = "offer";
@@ -2633,6 +2995,7 @@ function logout() {
   } catch (error) {
     // ignore storage failures
   }
+  clearApiSession();
   stopSyncPolling();
   setRootVisibility(false);
   if (loginPassword) loginPassword.value = "";
@@ -2659,7 +3022,7 @@ function blinkPandaEyes() {
   }, 320);
 }
 
-function authenticate(email, password) {
+function authenticateFromLocalStorage(email, password) {
   const normalized = (email || "").trim().toLowerCase();
   const normalizedPassword = (password || "").trim();
   if (normalized === AUTH.admin.email) {
@@ -2738,6 +3101,38 @@ function authenticate(email, password) {
   }
 
   return { role: "client", clientId: matchedClient.id || null, userEmail: matchedClient.loginEmail || "", reason: matchedClient.id ? null : "invalid" };
+}
+
+async function authenticate(email, password) {
+  const normalized = (email || "").trim().toLowerCase();
+  const normalizedPassword = (password || "").trim();
+  if (!normalized || !normalizedPassword) {
+    return { role: null, clientId: null, reason: "invalid" };
+  }
+
+  let apiHadServerError = false;
+  const apiAuth = await authenticateWithApi(normalized, normalizedPassword);
+  if (apiAuth.ok && apiAuth.auth) {
+    const auth = { ...apiAuth.auth };
+    if (auth.role === "client" && !auth.clientId && auth.backendClientId) {
+      const fallbackMatch = clients.find(client => String(client.backendId || "") === String(auth.backendClientId));
+      auth.clientId = fallbackMatch ? fallbackMatch.id : null;
+    }
+    if (auth.role !== "client" || auth.clientId) {
+      return auth;
+    }
+  } else if (apiAuth.reason === "api_error") {
+    apiHadServerError = true;
+  }
+
+  const localAuth = authenticateFromLocalStorage(normalized, normalizedPassword);
+  if (!localAuth.role && apiHadServerError) {
+    return { ...localAuth, reason: "api_error" };
+  }
+  if (!localAuth.role && apiAuth.reason === "api_unreachable" && localAuth.reason === "no_client_data") {
+    return { ...localAuth, reason: "api_unavailable" };
+  }
+  return localAuth;
 }
 
 function enforceClientAccess() {
@@ -10930,40 +11325,50 @@ if (offerApprovalBody) {
 }
 
 if (loginBtn) {
-  loginBtn.addEventListener("click", () => {
-    const auth = authenticate(loginEmail ? loginEmail.value : "", loginPassword ? loginPassword.value : "");
-    if (!auth.role || (auth.role === "client" && !auth.clientId)) {
-      if (loginError) {
-        if (auth.reason === "disabled") {
-          loginError.textContent = "This client access is disabled by admin.";
-        } else if (auth.reason === "subuser_disabled") {
-          loginError.textContent = "This user access is disabled.";
-        } else if (auth.reason === "user_disabled") {
-          loginError.textContent = "This user access is disabled by admin.";
-        } else if (auth.reason === "no_client_data") {
-          loginError.textContent = "No client accounts found in this browser storage.";
-        } else if (auth.reason === "no_user") {
-          loginError.textContent = "User ID not found.";
-        } else if (auth.reason === "wrong_password") {
-          loginError.textContent = "Incorrect password.";
-        } else if (auth.reason === "reset_required") {
-          loginError.textContent = "First login requires password reset.";
-        } else if (auth.reason === "storage_unavailable") {
-          loginError.textContent = "Unable to read client accounts from storage.";
-        } else {
-          loginError.textContent = "Invalid email or password.";
+  loginBtn.addEventListener("click", async () => {
+    if (loginBtn.disabled) return;
+    loginBtn.disabled = true;
+    try {
+      const auth = await authenticate(loginEmail ? loginEmail.value : "", loginPassword ? loginPassword.value : "");
+      if (!auth.role || (auth.role === "client" && !auth.clientId)) {
+        if (loginError) {
+          if (auth.reason === "disabled") {
+            loginError.textContent = "This client access is disabled by admin.";
+          } else if (auth.reason === "subuser_disabled") {
+            loginError.textContent = "This user access is disabled.";
+          } else if (auth.reason === "user_disabled") {
+            loginError.textContent = "This user access is disabled by admin.";
+          } else if (auth.reason === "no_client_data") {
+            loginError.textContent = "No client accounts found in this browser storage.";
+          } else if (auth.reason === "no_user") {
+            loginError.textContent = "User ID not found.";
+          } else if (auth.reason === "wrong_password") {
+            loginError.textContent = "Incorrect password.";
+          } else if (auth.reason === "reset_required") {
+            loginError.textContent = "First login requires password reset.";
+          } else if (auth.reason === "storage_unavailable") {
+            loginError.textContent = "Unable to read client accounts from storage.";
+          } else if (auth.reason === "api_unavailable") {
+            loginError.textContent = "Backend API is not reachable, and no local client data was found.";
+          } else if (auth.reason === "api_error") {
+            loginError.textContent = "Backend API login failed. Please try again.";
+          } else {
+            loginError.textContent = "Invalid email or password.";
+          }
+          loginError.classList.remove("hidden");
         }
-        loginError.classList.remove("hidden");
+        return;
       }
-      return;
+      if (auth.role === "client" && auth.reason === "reset_required") {
+        openFirstLoginResetModal(auth.clientId);
+        return;
+      }
+      if (loginError) loginError.classList.add("hidden");
+      if (auth.role === "client") activeClientId = auth.clientId;
+      login(auth.role, { userEmail: auth.userEmail || "", clientId: auth.clientId || null });
+    } finally {
+      loginBtn.disabled = false;
     }
-    if (auth.role === "client" && auth.reason === "reset_required") {
-      openFirstLoginResetModal(auth.clientId);
-      return;
-    }
-    if (loginError) loginError.classList.add("hidden");
-    if (auth.role === "client") activeClientId = auth.clientId;
-    login(auth.role, { userEmail: auth.userEmail || "" });
   });
 }
 
@@ -11011,6 +11416,10 @@ window.addEventListener("click", event => {
 
 window.addEventListener("storage", event => {
   if (event.key === STORAGE_KEY) {
+    if (hasApiSession()) {
+      void refreshClientsFromApi();
+      return;
+    }
     refreshClientsFromStorage();
     return;
   }
@@ -11026,6 +11435,10 @@ window.addEventListener("storage", event => {
 if (syncChannel) {
   syncChannel.addEventListener("message", event => {
     if (!event || !event.data || event.data.type !== "clients_updated") return;
+    if (hasApiSession()) {
+      void refreshClientsFromApi();
+      return;
+    }
     refreshClientsFromStorage();
   });
 }
@@ -11046,13 +11459,19 @@ window.addEventListener("beforeunload", () => {
   if (syncChannel) syncChannel.close();
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-  migrateStoredDataIfNeeded();
+document.addEventListener("DOMContentLoaded", async () => {
+  hydrateApiSessionFromStorage();
+  if (!hasApiSession()) {
+    migrateStoredDataIfNeeded();
+  }
   managedUsers = loadManagedUsers();
   const loadedClients = loadClients();
   clients = loadedClients || [];
   memoryClientsSnapshot = serializeClients(clients);
   lastSyncedSignature = getClientsSignature(clients);
+  if (hasApiSession()) {
+    await pullClientsFromApi();
+  }
   migrateLegacySowDocumentsToBinaryStore();
   activeClientId = clients[0] ? clients[0].id : null;
   applyRoleUI();
