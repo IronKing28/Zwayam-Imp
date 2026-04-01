@@ -389,6 +389,12 @@ const API_TOKEN_KEY = "zwayam_form_builder_api_token_v1";
 const API_USER_KEY = "zwayam_form_builder_api_user_v1";
 const DEFAULT_API_BASE_URL = "http://127.0.0.1:4000/api";
 const API_BASE_URL = String(window.ZWAYAM_API_BASE || window.ZWAYAM_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/+$/, "");
+const API_STRICT_MODE = (() => {
+  if (typeof window.ZWAYAM_STRICT_API === "boolean") return window.ZWAYAM_STRICT_API;
+  const host = String(window.location && window.location.hostname ? window.location.hostname : "").toLowerCase();
+  const isLocalHost = host === "localhost" || host === "127.0.0.1";
+  return !isLocalHost;
+})();
 const API_SYNC_DEBOUNCE_MS = 350;
 const CURRENT_DATA_SCHEMA_VERSION = 1;
 const AUTH = {
@@ -3233,6 +3239,16 @@ async function authenticate(email, password) {
     }
   } else if (apiAuth.reason === "api_error") {
     apiHadServerError = true;
+  }
+
+  if (API_STRICT_MODE) {
+    if (apiAuth.reason === "api_unreachable") {
+      return { role: null, clientId: null, reason: "api_unavailable" };
+    }
+    if (apiAuth.reason === "api_error") {
+      return { role: null, clientId: null, reason: "api_error" };
+    }
+    return { role: null, clientId: null, reason: "invalid" };
   }
 
   const localAuth = authenticateFromLocalStorage(normalized, normalizedPassword);
@@ -11463,7 +11479,7 @@ if (loginBtn) {
           } else if (auth.reason === "storage_unavailable") {
             loginError.textContent = "Unable to read client accounts from storage.";
           } else if (auth.reason === "api_unavailable") {
-            loginError.textContent = "Backend API is not reachable, and no local client data was found.";
+            loginError.textContent = "Backend API is not reachable. Please try again after backend is up.";
           } else if (auth.reason === "api_error") {
             loginError.textContent = "Backend API login failed. Please try again.";
           } else {
