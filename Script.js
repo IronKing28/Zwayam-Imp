@@ -3253,9 +3253,6 @@ async function authenticate(email, password) {
   if (!localAuth.role && apiHadServerError) {
     return { ...localAuth, reason: "api_error" };
   }
-  if (!localAuth.role && apiAuth.reason === "api_unreachable" && localAuth.reason === "no_client_data") {
-    return { ...localAuth, reason: "api_unavailable" };
-  }
   return localAuth;
 }
 
