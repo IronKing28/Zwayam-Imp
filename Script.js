@@ -139,6 +139,28 @@ const PII_BASE_FIELDS = [
   { id: "reference_designation", label: "Reference: Designation", mandatory: false }
 ];
 
+const PII_DEFAULT_CANVAS_SPEC = [
+  { id: "salutation", type: "dropdown", options: ["Mr.", "Ms.", "Mrs.", "Dr."], sectionName: "Personal Details" },
+  { id: "first_name_govt_id", type: "text", sectionName: "Personal Details" },
+  { id: "last_name_govt_id", type: "text", sectionName: "Personal Details" },
+  { id: "date_of_birth", type: "date", sectionName: "Personal Details" },
+  { id: "phone_number", type: "tel", sectionName: "Personal Details" },
+  { id: "gender", type: "dropdown", options: ["Male", "Female", "Others", "Prefer not to say"], sectionName: "Personal Details" },
+  { id: "aadhar_number", type: "text", sectionName: "Personal Details" },
+  { id: "pan_number", type: "text", sectionName: "Personal Details" },
+  { id: "present_address_line_1", type: "text", sectionName: "Present Address" },
+  { id: "present_city", type: "text", sectionName: "Present Address" },
+  { id: "present_state", type: "text", sectionName: "Present Address" },
+  { id: "present_country", type: "text", sectionName: "Present Address" },
+  { id: "present_pin_code", type: "text", sectionName: "Present Address" },
+  { id: "same_as_present_address", type: "dropdown", options: ["Yes", "No"], sectionName: "Permanent Address" },
+  { id: "permanent_address_line_1", type: "text", sectionName: "Permanent Address" },
+  { id: "permanent_city", type: "text", sectionName: "Permanent Address" },
+  { id: "permanent_state", type: "text", sectionName: "Permanent Address" },
+  { id: "permanent_country", type: "text", sectionName: "Permanent Address" },
+  { id: "permanent_pin_code", type: "text", sectionName: "Permanent Address" }
+];
+
 const APPLY_BASE_FIELDS = [
   { id: "upload_resume", label: "Upload Resume", mandatory: true },
   { id: "first_name", label: "First Name", mandatory: true },
@@ -1163,6 +1185,71 @@ function ensureDefaultApplyCanvas(pageState) {
   pageState.submittedCanvasFields = JSON.parse(JSON.stringify(defaults));
 }
 
+function ensureDefaultPiiCanvas(pageState, sections = []) {
+  if (!pageState) return;
+  if (Array.isArray(pageState.canvasFields) && pageState.canvasFields.length) return;
+
+  const hasSubmittedFields = Array.isArray(pageState.submittedCanvasFields) && pageState.submittedCanvasFields.length > 0;
+  const hasAuditActivity = Array.isArray(pageState.auditLogs) && pageState.auditLogs.length > 0;
+  const availableCount = pageState.availableIds instanceof Set
+    ? pageState.availableIds.size
+    : Array.isArray(pageState.availableIds)
+      ? pageState.availableIds.length
+      : 0;
+  const catalogCount = Array.isArray(pageState.fieldCatalog) ? pageState.fieldCatalog.length : 0;
+  if (hasSubmittedFields || hasAuditActivity || (catalogCount > 0 && availableCount < catalogCount)) return;
+
+  const catalog = Array.isArray(pageState.fieldCatalog) ? pageState.fieldCatalog : [];
+  const byId = new Map(catalog.map(field => [field.id, field]));
+  const sectionsByName = new Map(
+    (Array.isArray(sections) ? sections : [])
+      .map(section => ({
+        id: String(section?.id || ""),
+        name: String(section?.name || "").trim()
+      }))
+      .filter(section => section.id && section.name)
+      .map(section => [section.name.toLowerCase(), section])
+  );
+
+  const defaults = [];
+  const defaultSectionOrder = [];
+
+  PII_DEFAULT_CANVAS_SPEC.forEach(spec => {
+    const base = byId.get(spec.id);
+    if (!base) return;
+
+    const mappedSection = sectionsByName.get(String(spec.sectionName || "").toLowerCase()) || null;
+    defaults.push({
+      ...base,
+      type: spec.type || "text",
+      options: Array.isArray(spec.options) ? [...spec.options] : [],
+      validation: {
+        required: Boolean(base.mandatory),
+        minLength: null,
+        maxLength: null,
+        minNumber: null,
+        maxNumber: null,
+        pattern: null,
+        errorMessage: null
+      },
+      sectionId: mappedSection ? mappedSection.id : undefined,
+      sectionLabel: mappedSection ? mappedSection.name : undefined
+    });
+
+    if (mappedSection && !defaultSectionOrder.includes(mappedSection.id)) {
+      defaultSectionOrder.push(mappedSection.id);
+    }
+  });
+
+  if (!defaults.length) return;
+  pageState.canvasFields = defaults;
+  pageState.canvasSectionOrder = defaultSectionOrder;
+  pageState.availableIds = new Set(
+    Array.from(pageState.availableIds || []).filter(id => !defaults.some(field => field.id === id))
+  );
+  pageState.submittedCanvasFields = JSON.parse(JSON.stringify(defaults));
+}
+
 function ensureDefaultOfferCanvas(pageState) {
   if (!pageState) return;
   if (Array.isArray(pageState.canvasFields) && pageState.canvasFields.length) return;
@@ -1370,6 +1457,7 @@ function getPiiActiveGeo(client) {
 function ensurePiiGeoStates(client) {
   if (!client) return;
   ensureClientPages(client);
+  ensurePiiSections(client);
   ensureDepartmentStructure(client);
   if (!client.piiGeoStates || typeof client.piiGeoStates !== "object") {
     client.piiGeoStates = {};
@@ -1382,6 +1470,7 @@ function ensurePiiGeoStates(client) {
     const seededDefault = client.piiGeoStates[PII_DEFAULT_GEO_KEY]
       ? normalizePageState(client.piiGeoStates[PII_DEFAULT_GEO_KEY], PII_BASE_FIELDS)
       : null;
+    ensureDefaultPiiCanvas(seededDefault, client.piiSections?.sections || []);
     const hasGeoState = geos.some(geo => client.piiGeoStates[geo]);
     if (!hasGeoState) {
       client.piiGeoStates[geos[0]] = normalizePageState(deepCopy(seededDefault || legacyPiiState), PII_BASE_FIELDS);
@@ -1393,11 +1482,13 @@ function ensurePiiGeoStates(client) {
       } else {
         client.piiGeoStates[geo] = normalizePageState(client.piiGeoStates[geo], PII_BASE_FIELDS);
       }
+      ensureDefaultPiiCanvas(client.piiGeoStates[geo], client.piiSections?.sections || []);
     });
 
     Object.keys(client.piiGeoStates).forEach(key => {
       if (!geos.includes(key)) delete client.piiGeoStates[key];
     });
+    syncPiiFieldAvailability(client);
     client.piiGeoFilter = getPiiActiveGeo(client);
     return;
   }
@@ -1408,15 +1499,28 @@ function ensurePiiGeoStates(client) {
     if (firstKey && client.piiGeoStates[firstKey]) return client.piiGeoStates[firstKey];
     return legacyPiiState;
   })();
+  ensureDefaultPiiCanvas(fallbackSeed, client.piiSections?.sections || []);
   client.piiGeoStates = {
     [PII_DEFAULT_GEO_KEY]: normalizePageState(deepCopy(fallbackSeed), PII_BASE_FIELDS)
   };
+  syncPiiFieldAvailability(client);
   client.piiGeoFilter = "";
+}
+
+function syncPiiFieldAvailability(client) {
+  if (!client || !client.piiGeoStates || typeof client.piiGeoStates !== "object") return;
+  Object.values(client.piiGeoStates).forEach(state => {
+    if (!state || !Array.isArray(state.fieldCatalog) || !Array.isArray(state.canvasFields)) return;
+    const usedIds = new Set(state.canvasFields.map(field => field?.id).filter(Boolean));
+    const catalogIds = state.fieldCatalog.map(field => field.id).filter(Boolean);
+    state.availableIds = new Set(catalogIds.filter(id => !usedIds.has(id)));
+  });
 }
 
 function getPiiGeoPageState(client, geoName = null) {
   if (!client) return null;
   ensurePiiGeoStates(client);
+  const piiSections = client.piiSections?.sections || [];
   const geos = Array.isArray(client.departmentStructure?.geos) ? client.departmentStructure.geos : [];
   if (geos.length) {
     const selected = geoName && geos.some(geo => geo.toLowerCase() === String(geoName).toLowerCase())
@@ -1424,11 +1528,15 @@ function getPiiGeoPageState(client, geoName = null) {
       : getPiiActiveGeo(client);
     client.piiGeoFilter = selected || "";
     if (!client.piiGeoStates[selected]) client.piiGeoStates[selected] = createPageState(PII_BASE_FIELDS);
+    ensureDefaultPiiCanvas(client.piiGeoStates[selected], piiSections);
+    syncPiiFieldAvailability(client);
     return client.piiGeoStates[selected];
   }
   if (!client.piiGeoStates[PII_DEFAULT_GEO_KEY]) {
     client.piiGeoStates[PII_DEFAULT_GEO_KEY] = createPageState(PII_BASE_FIELDS);
   }
+  ensureDefaultPiiCanvas(client.piiGeoStates[PII_DEFAULT_GEO_KEY], piiSections);
+  syncPiiFieldAvailability(client);
   return client.piiGeoStates[PII_DEFAULT_GEO_KEY];
 }
 
@@ -2409,6 +2517,8 @@ function createClientState(name, integrations, loginEmail, loginPassword, ownerU
   const requisitionPage = createPageState(BASE_FIELDS);
   ensureDefaultRequisitionCanvas(requisitionPage);
   const piiPage = createPageState(PII_BASE_FIELDS);
+  const defaultPiiSections = createDefaultPiiSections();
+  ensureDefaultPiiCanvas(piiPage, defaultPiiSections.sections);
   const applyPage = createPageState(APPLY_BASE_FIELDS);
   ensureDefaultApplyCanvas(applyPage);
   const normalizedSow = normalizeClientSowDocument(sowDocument);
@@ -2441,7 +2551,7 @@ function createClientState(name, integrations, loginEmail, loginPassword, ownerU
     taChecklist: createDefaultTaChecklist(),
     documentCollection: createDefaultDocumentCollection(),
     fitmentData: createDefaultFitmentData(),
-    piiSections: createDefaultPiiSections(),
+    piiSections: defaultPiiSections,
     piiGeoStates: {},
     piiGeoFilter: "",
     workflowData: createDefaultWorkflowData(),
@@ -4427,6 +4537,10 @@ function renderPalette() {
   const active = getActiveClient();
   const pageState = getPageState(active);
   if (!active || !palette) return;
+
+  if (getActivePageKey() === "pii") {
+    syncPiiFieldAvailability(active);
+  }
 
   palette.innerHTML = "";
   if (!pageState) return;
